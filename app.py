@@ -28,8 +28,7 @@ def save_df(df, f): df.to_csv(f, index=False)
 
 # --- 3. GARAGE ---
 fleet_df = get_df(FLEET)
-active_unit = None
-unit_cat = "Car"
+active_unit, unit_cat = None, "Car"
 
 if not fleet_df.empty:
     fleet_df["D"] = fleet_df["Year"].astype(str) + " " + fleet_df["Make"] + " " + fleet_df["Model"]
@@ -46,7 +45,7 @@ with st.sidebar.expander("➕ Add Vehicle"):
             save_df(pd.concat([get_df(FLEET), new_v], ignore_index=True), FLEET)
             st.rerun()
 
-# --- 4. DASHBOARD ---
+# --- 4. MAIN DASH ---
 st.title("🛠️ The Garage Hub")
 if not active_unit:
     st.info("👈 Add a vehicle in the sidebar to begin.")
@@ -55,7 +54,6 @@ if not active_unit:
 col1, col2 = st.columns([1, 2], gap="large")
 with col1:
     st.subheader(f"📝 Log for {active_unit}")
-    # Using a unique key for the container to force a refresh when vehicle changes
     with st.container(border=True):
         l_km = st.number_input("Current KM", min_value=0, step=1, key=f"km_{active_unit}")
         l_type = st.selectbox("Activity", ["Oil Change", "Tire Swap", "Bulbs", "Battery", "Repair", "Legal"], key=f"type_{active_unit}")
@@ -64,13 +62,13 @@ with col1:
         
         if l_type == "Oil Change":
             c1, c2 = st.columns(2)
-            # Keys now include the vehicle name so they don't 'bleed' over
             o_g = c1.text_input("Oil Grade", key=f"og_{active_unit}")
             o_q = c2.text_input("Liters", key=f"oq_{active_unit}")
             if unit_cat == "Motorcycle":
-                o_c = st.selectbox("Oil Category", ["Synthetic Blend", "Full Synthetic", "Mineral", "V-Twin Specific"], key=f"oc_{active_unit}")
+                opts = ["Synthetic Blend", "Full Synthetic", "Mineral", "V-Twin Specific"]
             else:
-                o_c = st.selectbox("Oil Category", ["Full Synthetic", "High Mileage", "Synthetic Blend", "Conventional"], key=f"oc_{active_unit}")
+                opts = ["Full Synthetic", "High Mileage", "Synthetic Blend", "Conventional"]
+            o_c = st.selectbox("Oil Category", opts, key=f"oc_{active_unit}")
             o_f = st.text_input("Oil Filter #", key=f"of_{active_unit}")
             nxt = l_km + 8000
             
@@ -90,4 +88,22 @@ with col1:
             reg = st.date_input("Plates", key=f"rg_{active_unit}")
 
         l_ref = st.text_input("Part # / Ref", key=f"ref_{active_unit}")
-        l_
+        l_notes = st.text_area("Notes", key=f"nt_{active_unit}")
+        photo = st.camera_input("Photo", key=f"ph_{active_unit}")
+
+        if st.button("Commit to Log"):
+            if photo:
+                p_p = f"{IMG}/{active_unit.replace(' ','_')}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg"
+                Image.open(photo).save(p_p)
+            new_row = [datetime.now().strftime("%Y-%m-%d"), active_unit, l_km, nxt, l_type, l_ref, o_g, o_q, o_c, o_f, a_f, bat, t_s, t_sea, str(t_d), l_b, h_b, fog, blk, dom, str(ins), str(reg), p_p, l_notes]
+            save_df(pd.concat([get_df(LOG), pd.DataFrame([new_row], columns=COLS)]), LOG)
+            st.rerun()
+
+with col2:
+    st.subheader(f"📊 {active_unit} History")
+    hist = get_df(LOG)
+    if not hist.empty:
+        df_show = hist[hist["Unit"] == active_unit].sort_values("KM", ascending=False)
+        st.dataframe(df_show, use_container_width=True, hide_index=True)
+        if not df_show.empty and pd.notna(df_show.iloc[0]['Photo']):
+            if df_show.iloc[0]['Photo'] != "": st.image(df_show.iloc[0]['Photo'])
