@@ -19,7 +19,6 @@ if not os.path.exists(IMG): os.makedirs(IMG)
 if not os.path.exists(FLEET):
     pd.DataFrame(columns=["Year", "Make", "Model", "Category"]).to_csv(FLEET, index=False)
 
-# Added columns for Primary and Transmission
 COLS = ["Date", "Unit", "KM", "Next_KM", "Type", "Ref", "Oil_G", "Oil_Q", "Oil_Cat", "Oil_F", "Primary_Oil", "Trans_Oil", "Air_F", "Batt", "Tire_S", "Tire_Sea", "Tire_D", "Low_B", "High_B", "Fog", "Blink", "Dom", "Ins", "Reg", "Photo", "Notes"]
 if not os.path.exists(LOG):
     pd.DataFrame(columns=COLS).to_csv(LOG, index=False)
@@ -27,13 +26,25 @@ if not os.path.exists(LOG):
 def get_df(f): return pd.read_csv(f)
 def save_df(df, f): df.to_csv(f, index=False)
 
-# --- 3. GARAGE ---
+# --- 3. GARAGE & VEHICLE REMOVAL ---
 fleet_df = get_df(FLEET)
 active_unit, unit_cat = None, "Car"
+
 if not fleet_df.empty:
     fleet_df["D"] = fleet_df["Year"].astype(str) + " " + fleet_df["Make"] + " " + fleet_df["Model"]
     active_unit = st.sidebar.selectbox("Select Vehicle", fleet_df["D"].tolist())
     unit_cat = fleet_df[fleet_df["D"] == active_unit]["Category"].values[0]
+    
+    if st.sidebar.button("🗑️ Remove Selected Vehicle"):
+        if st.sidebar.checkbox("Confirm Delete?"):
+            # Remove from fleet
+            new_fleet = fleet_df[fleet_df["D"] != active_unit].drop(columns=["D"])
+            save_df(new_fleet, FLEET)
+            # Remove associated logs
+            hist = get_df(LOG)
+            new_hist = hist[hist["Unit"] != active_unit]
+            save_df(new_hist, LOG)
+            st.rerun()
 
 with st.sidebar.expander("➕ Add Vehicle"):
     vy, vma, vmo = st.selectbox("Year", range(2027, 1980, -1)), st.text_input("Make"), st.text_input("Model")
@@ -57,14 +68,10 @@ with col1:
         
         if l_t == "Oil Change":
             if unit_cat == "Motorcycle":
-                st.markdown("**Engine**")
-                c1, c2 = st.columns(2)
-                o_g = c1.text_input("Grade (e.g. 20W50)", key=f"og_{active_unit}")
-                o_f = c2.text_input("Oil Filter #", key=f"of_{active_unit}")
-                st.markdown("**Drivetrain**")
-                c3, c4 = st.columns(2)
-                pri = c3.text_input("Primary Oil", key=f"pri_{active_unit}")
-                tra = c4.text_input("Transmission Oil", key=f"tra_{active_unit}")
+                st.markdown("**Engine**"); c1, c2 = st.columns(2)
+                o_g, o_f = c1.text_input("Grade", key=f"og_{active_unit}"), c2.text_input("Filter #", key=f"of_{active_unit}")
+                st.markdown("**Drivetrain**"); c3, c4 = st.columns(2)
+                pri, tra = c3.text_input("Primary Oil", key=f"pri_{active_unit}"), c4.text_input("Trans Oil", key=f"tra_{active_unit}")
                 o_c = "Motorcycle Multi-Oil"
             else:
                 c1, c2 = st.columns(2)
@@ -101,6 +108,7 @@ with col2:
         edit_mode = st.toggle("🔓 Enable Edit Mode")
         unit_h = hist[hist["Unit"] == active_unit].sort_values("KM", ascending=False)
         if edit_mode:
+            st.info("💡 To remove a photo, clear the text in the 'Photo' column. To remove a row, select it and hit 'Delete' on your keyboard.")
             edited_df = st.data_editor(unit_h, use_container_width=True, hide_index=True, num_rows="dynamic")
             if st.button("💾 Save Changes"):
                 non_unit = hist[hist["Unit"] != active_unit]
