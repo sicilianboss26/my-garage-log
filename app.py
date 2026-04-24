@@ -25,7 +25,7 @@ if not os.path.exists(LOG):
 def get_df(f): return pd.read_csv(f)
 def save_df(df, f): df.to_csv(f, index=False)
 
-# --- 3. SIDEBAR: VEHICLE MANAGEMENT ---
+# --- 3. SIDEBAR: VEHICLES ---
 fleet_df = get_df(FLEET)
 active_unit, unit_cat = None, "Car"
 
@@ -39,11 +39,9 @@ with st.sidebar.expander("➕ Add New Vehicle"):
 
 if not fleet_df.empty:
     fleet_df["D"] = fleet_df["Year"].astype(str) + " " + fleet_df["Make"] + " " + fleet_df["Model"]
-    active_unit = st.sidebar.selectbox("Select Active Vehicle", fleet_df["D"].tolist())
+    active_unit = st.sidebar.selectbox("Select Vehicle", fleet_df["D"].tolist())
     unit_cat = fleet_df[fleet_df["D"] == active_unit]["Category"].values[0]
-    
-    st.sidebar.markdown("---")
-    if st.sidebar.button("🗑️ Delete Selected Vehicle"):
+    if st.sidebar.button("🗑️ Delete Vehicle"):
         if st.sidebar.checkbox("Confirm Delete?"):
             save_df(fleet_df[fleet_df["D"] != active_unit].drop(columns=["D"]), FLEET)
             save_df(get_df(LOG)[get_df(LOG)["Unit"] != active_unit], LOG); st.rerun()
@@ -62,41 +60,40 @@ with c1:
         o_g, o_q, o_c, o_f, pri, tra, a_f, bat, t_s, f_sz, r_sz, l_b, h_b, fog, blk, dom, ins, reg, p_p, nxt = "","","","","","","","","","", "","","","","","","","", "", 0
         
         if l_t == "Tire Service":
-            # Tire grid for Front
+            # Front Tire Section
             st.write("🔧 **Tire Size**" if unit_cat != "Motorcycle" else "🏍️ **Front Tire**")
             f1, f2, f3 = st.columns(3)
             fw, fa, fr = f1.text_input("Width", key="fw"), f2.text_input("Ratio", key="fa"), f3.text_input("Rim", key="fr")
             f_sz = f"{fw}/{fa}R{fr}" if fw and fa and fr else ""
 
-            # Only motorcycles show the Rear Tire size
+            # Rear Tire Section (Motorcycles Only)
             if unit_cat == "Motorcycle":
                 st.write("🏍️ **Rear Tire**")
                 r1, r2, r3 = st.columns(3)
                 rw, ra, rr = r1.text_input("Width ", key="rw"), r2.text_input("Ratio ", key="ra"), r3.text_input("Rim ", key="rr")
                 r_sz = f"{rw}/{ra}R{rr}" if rw and ra and rr else ""
-            
-            t_s = st.text_input("Tire Brand/Model", key="brand")
 
         elif l_t == "Oil Change":
             if unit_cat == "Motorcycle":
-                st.markdown("**Engine**"); c1, c2 = st.columns(2)
-                o_g, o_f = c1.text_input("Grade", key="og"), c2.text_input("Filter #", key="of")
+                st.markdown("**Engine**"); m1, m2 = st.columns(2)
+                o_g, o_f = m1.text_input("Grade", key="og"), m2.text_input("Filter #", key="of")
                 o_c = st.selectbox("Type", ["Mineral", "V-Twin Specific", "Full Synthetic"], key="oc")
-                st.markdown("**Drivetrain**"); c3, c4 = st.columns(2)
-                pri, tra = c3.text_input("Primary Oil", key="pri"), c4.text_input("Trans Oil", key="tra")
+                st.markdown("**Drivetrain**"); m3, m4 = st.columns(2)
+                pri, tra = m3.text_input("Primary Oil", key="pri"), m4.text_input("Trans Oil", key="tra")
             else:
-                o_g, o_c = st.text_input("Grade", key="og"), st.selectbox("Type", ["Full Synthetic", "High Mileage", "Conventional"], key="oc")
+                o1, o2 = st.columns(2)
+                o_g, o_c = o1.text_input("Grade", key="og"), o2.selectbox("Type", ["Full Synthetic", "High Mileage", "Conventional"], key="oc")
                 o_f = st.text_input("Filter #", key="of")
             nxt = l_km + 8000
 
-        l_ref, l_notes = st.text_input("Ref #", key=f"rf_{active_unit}"), st.text_area("Notes", key=f"n_{active_unit}")
-        gal = st.file_uploader("Upload Image/Invoice", type=['jpg', 'jpeg', 'png'], key=f"g_{active_unit}")
+        l_notes = st.text_area("Notes", key=f"n_{active_unit}")
+        gal = st.file_uploader("Upload Image", type=['jpg', 'jpeg', 'png'], key=f"g_{active_unit}")
         
         if st.button("Commit to Log"):
             if gal:
                 p_p = f"{IMG}/{active_unit.replace(' ','_')}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg"
                 Image.open(gal).save(p_p)
-            save_df(pd.concat([get_df(LOG), pd.DataFrame([[datetime.now().strftime("%Y-%m-%d"), active_unit, l_km, nxt, l_t, l_ref, o_g, o_q, o_c, o_f, pri, tra, a_f, bat, t_s, f_sz, r_sz, l_b, h_b, fog, blk, dom, str(ins), str(reg), p_p, l_notes]], columns=COLS)]), LOG); st.rerun()
+            save_df(pd.concat([get_df(LOG), pd.DataFrame([[datetime.now().strftime("%Y-%m-%d"), active_unit, l_km, nxt, l_t, "", o_g, o_q, o_c, o_f, pri, tra, a_f, bat, t_s, f_sz, r_sz, l_b, h_b, fog, blk, dom, str(ins), str(reg), p_p, l_notes]], columns=COLS)]), LOG); st.rerun()
 
 with c2:
     st.subheader(f"📊 Service History")
