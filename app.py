@@ -57,53 +57,19 @@ with col1:
     with st.container(border=True):
         l_km = st.number_input("Current KM", min_value=0, step=1, key=f"km_{active_unit}")
         l_type = st.selectbox("Activity", ["Oil Change", "Tire Swap", "Bulbs", "Battery", "Repair", "Legal"], key=f"type_{active_unit}")
-        
         o_g, o_q, o_c, o_f, a_f, bat, t_s, t_sea, t_d, l_b, h_b, fog, blk, dom, ins, reg, p_p, nxt = "","","","","","","","","","","","","","","", "", "", 0
         
         if l_type == "Oil Change":
             c1, c2 = st.columns(2)
-            o_g = c1.text_input("Oil Grade", key=f"og_{active_unit}")
-            o_q = c2.text_input("Liters", key=f"oq_{active_unit}")
-            if unit_cat == "Motorcycle":
-                opts = ["Synthetic Blend", "Full Synthetic", "Mineral", "V-Twin Specific"]
-            else:
-                opts = ["Full Synthetic", "High Mileage", "Synthetic Blend", "Conventional"]
-            o_c = st.selectbox("Oil Category", opts, key=f"oc_{active_unit}")
-            o_f = st.text_input("Oil Filter #", key=f"of_{active_unit}")
-            nxt = l_km + 8000
-            
+            o_g, o_q = c1.text_input("Oil Grade", key=f"og_{active_unit}"), c2.text_input("Liters", key=f"oq_{active_unit}")
+            opts = ["Synthetic Blend", "Full Synthetic", "Mineral", "V-Twin Specific"] if unit_cat == "Motorcycle" else ["Full Synthetic", "High Mileage", "Synthetic Blend", "Conventional"]
+            o_c, o_f, nxt = st.selectbox("Oil Category", opts, key=f"oc_{active_unit}"), st.text_input("Oil Filter #", key=f"of_{active_unit}"), l_km + 8000
         elif l_type == "Tire Swap":
             t_sea = st.radio("Installed", ["Winters ❄️", "Summers ☀️"], key=f"ts_{active_unit}")
             def_d = datetime(2026,12,1) if "Summers" in t_sea else datetime(2027,3,15)
             t_d = st.date_input("Next Deadline", value=def_d, key=f"td_{active_unit}")
-            
         elif l_type == "Bulbs":
-            l_b = st.text_input("Low Beam", key=f"lb_{active_unit}")
-            h_b = st.text_input("High Beam", key=f"hb_{active_unit}")
-            fog = st.text_input("Fogs", key=f"fg_{active_unit}")
-            blk = st.text_input("Blinker/Brake", key=f"bl_{active_unit}")
-            
+            l_b, h_b = st.text_input("Low Beam", key=f"lb_{active_unit}"), st.text_input("High Beam", key=f"hb_{active_unit}")
+            fog, blk = st.text_input("Fogs", key=f"fg_{active_unit}"), st.text_input("Blinker/Brake", key=f"bl_{active_unit}")
         elif l_type == "Legal":
-            ins = st.date_input("Insurance", key=f"in_{active_unit}")
-            reg = st.date_input("Plates", key=f"rg_{active_unit}")
-
-        l_ref = st.text_input("Part # / Ref", key=f"ref_{active_unit}")
-        l_notes = st.text_area("Notes", key=f"nt_{active_unit}")
-        photo = st.camera_input("Photo", key=f"ph_{active_unit}")
-
-        if st.button("Commit to Log"):
-            if photo:
-                p_p = f"{IMG}/{active_unit.replace(' ','_')}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg"
-                Image.open(photo).save(p_p)
-            new_row = [datetime.now().strftime("%Y-%m-%d"), active_unit, l_km, nxt, l_type, l_ref, o_g, o_q, o_c, o_f, a_f, bat, t_s, t_sea, str(t_d), l_b, h_b, fog, blk, dom, str(ins), str(reg), p_p, l_notes]
-            save_df(pd.concat([get_df(LOG), pd.DataFrame([new_row], columns=COLS)]), LOG)
-            st.rerun()
-
-with col2:
-    st.subheader(f"📊 {active_unit} History")
-    hist = get_df(LOG)
-    if not hist.empty:
-        df_show = hist[hist["Unit"] == active_unit].sort_values("KM", ascending=False)
-        st.dataframe(df_show, use_container_width=True, hide_index=True)
-        if not df_show.empty and pd.notna(df_show.iloc[0]['Photo']):
-            if df_show.iloc[0]['Photo'] != "": st.image(df_show.iloc[0]['Photo'])
+            ins, reg = st.date_input("Insurance", key=f"in_{active_unit}"), st.
