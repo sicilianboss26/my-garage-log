@@ -3,10 +3,19 @@ import pandas as pd
 from datetime import datetime
 import os
 
-# --- APP CONFIG ---
-st.set_page_config(page_title="Garage Hub 2.1", layout="wide")
+# --- CONFIG & SECURITY ---
+st.set_page_config(page_title="The Hub: Private Fleet", layout="wide")
+PASSWORD = "thisisatest2626" # <--- SET YOUR REAL PASSWORD HERE
 LOG_FILE = "maintenance_log.csv"
 FLEET_FILE = "fleet_list.csv"
+
+# Check password in sidebar
+st.sidebar.title("🔐 Access Control")
+user_pwd = st.sidebar.text_input("Enter Access Code", type="password")
+
+if user_pwd != PASSWORD:
+    st.info("Enter the access code in the sidebar to open the fleet logs.")
+    st.stop() 
 
 # --- DATA INITIALIZATION ---
 if not os.path.exists(LOG_FILE):
@@ -37,59 +46,42 @@ def save_log(vehicle, entry_type, detail, notes):
     new_entry.to_csv(LOG_FILE, mode='a', header=False, index=False)
 
 # --- UI SIDEBAR ---
+st.sidebar.divider()
 st.sidebar.title("🚛 Fleet Management")
 fleet = get_fleet()
 active_car = st.sidebar.selectbox("Select Vehicle", fleet)
 
-st.sidebar.divider()
 with st.sidebar.expander("➕ Add New Vehicle"):
-    new_vehicle_name = st.text_input("Vehicle Name")
-    if st.button("Add to Fleet"):
-        if new_vehicle_name:
-            add_to_fleet(new_vehicle_name)
+    new_v = st.text_input("Vehicle Name")
+    if st.button("Add"):
+        if new_v:
+            add_to_fleet(new_v)
             st.rerun()
 
-with st.sidebar.expander("🗑️ Remove a Vehicle"):
-    to_delete = st.selectbox("Select vehicle to delete", fleet)
-    confirm = st.checkbox(f"Confirm deleting {to_delete}")
-    if st.button("Delete Permanently"):
-        if confirm:
-            remove_from_fleet(to_delete)
-            st.rerun()
-        else:
-            st.warning("Please check the box to confirm.")
+with st.sidebar.expander("🗑️ Remove Vehicle"):
+    to_delete = st.selectbox("Select to delete", fleet)
+    if st.button("Confirm Delete"):
+        remove_from_fleet(to_delete)
+        st.rerun()
 
 # --- MAIN UI ---
-st.title("🔧 Garage Hub 2.1")
-st.header(f"Currently Wrenching: {active_car}")
+st.title("🔧 The Hub: Private Fleet Manager")
+st.header(f"Active Unit: {active_car}")
 
 col1, col2 = st.columns(2)
-
 with col1:
-    st.subheader("Log Activity")
-    log_type = st.selectbox("Type", ["Check Engine Code", "Oil Change", "Repair", "Part Upgrade", "Inspection"])
-    detail = st.text_input("Code/Part #")
-    notes = st.text_area("Notes (Specs, symptoms, etc.)")
-    
-    if st.button("Save Entry"):
+    st.subheader("New Entry")
+    log_type = st.selectbox("Action", ["Oil Change", "Diagnostic Code", "Repair", "Tires", "Inspection", "Mod"])
+    detail = st.text_input("Part # / Code")
+    notes = st.text_area("Details (Torque, symptoms, etc.)")
+    if st.button("Save Log"):
         save_log(active_car, log_type, detail, notes)
-        st.success(f"Saved for {active_car}!")
+        st.success("Log Saved.")
 
 with col2:
     st.subheader("History")
     try:
         history = pd.read_csv(LOG_FILE)
-        filtered = history[history["Vehicle"] == active_car]
-        st.dataframe(filtered.sort_values(by="Date", ascending=False), use_container_width=True)
+        st.dataframe(history[history["Vehicle"] == active_car].sort_values("Date", ascending=False), use_container_width=True)
     except:
-        st.write("No logs yet.")
-
-# Quick Specs
-st.divider()
-specs = {
-    "2012 GMC Terrain": "Oil: 5W-30 (5qt) | Socket: 15mm | Filter: PF457G",
-    "2018 Hyundai Kona": "Oil: 5W-20 (4.2qt) | Drain Plug: 17mm",
-    "2016 Honda HR-V": "Oil: 0W-20 (3.9qt) | Filter: PL14610"
-}
-if active_car in specs:
-    st.info(f"💡 Quick Spec: {specs[active_car]}")
+        st.write("No logs recorded.")
