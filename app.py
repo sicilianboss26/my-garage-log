@@ -19,7 +19,8 @@ if not os.path.exists(IMG): os.makedirs(IMG)
 if not os.path.exists(FLEET):
     pd.DataFrame(columns=["Year", "Make", "Model", "Category"]).to_csv(FLEET, index=False)
 
-COLS = ["Date", "Unit", "KM", "Next_KM", "Type", "Ref", "Oil_G", "Oil_Q", "Oil_Cat", "Oil_F", "Air_F", "Batt", "Tire_S", "Tire_Sea", "Tire_D", "Low_B", "High_B", "Fog", "Blink", "Dom", "Ins", "Reg", "Photo", "Notes"]
+# Added columns for Primary and Transmission
+COLS = ["Date", "Unit", "KM", "Next_KM", "Type", "Ref", "Oil_G", "Oil_Q", "Oil_Cat", "Oil_F", "Primary_Oil", "Trans_Oil", "Air_F", "Batt", "Tire_S", "Tire_Sea", "Tire_D", "Low_B", "High_B", "Fog", "Blink", "Dom", "Ins", "Reg", "Photo", "Notes"]
 if not os.path.exists(LOG):
     pd.DataFrame(columns=COLS).to_csv(LOG, index=False)
 
@@ -52,12 +53,26 @@ with col1:
     with st.container(border=True):
         l_km = st.number_input("Current KM", min_value=0, step=1, key=f"k_{active_unit}")
         l_t = st.selectbox("Activity", ["Oil Change", "Tire Swap", "Bulbs", "Battery", "Repair", "Legal"], key=f"t_{active_unit}")
-        o_g, o_q, o_c, o_f, a_f, bat, t_s, t_sea, t_d, l_b, h_b, fog, blk, dom, ins, reg, p_p, nxt = "","","","","","","","","","","","","","","", "", "", 0
+        o_g, o_q, o_c, o_f, pri, tra, a_f, bat, t_s, t_sea, t_d, l_b, h_b, fog, blk, dom, ins, reg, p_p, nxt = "","","","","","","","","","","","","","","", "", "", "", "", 0
         
         if l_t == "Oil Change":
-            o_g, o_q = st.text_input("Grade", key=f"og_{active_unit}"), st.text_input("Liters", key=f"oq_{active_unit}")
-            opts = ["Synthetic Blend", "Full Synthetic", "Mineral", "V-Twin Specific"] if unit_cat == "Motorcycle" else ["Full Synthetic", "High Mileage", "Synthetic Blend", "Conventional"]
-            o_c, o_f, nxt = st.selectbox("Category", opts, key=f"oc_{active_unit}"), st.text_input("Filter #", key=f"of_{active_unit}"), l_km + 8000
+            if unit_cat == "Motorcycle":
+                st.markdown("**Engine**")
+                c1, c2 = st.columns(2)
+                o_g = c1.text_input("Grade (e.g. 20W50)", key=f"og_{active_unit}")
+                o_f = c2.text_input("Oil Filter #", key=f"of_{active_unit}")
+                st.markdown("**Drivetrain**")
+                c3, c4 = st.columns(2)
+                pri = c3.text_input("Primary Oil", key=f"pri_{active_unit}")
+                tra = c4.text_input("Transmission Oil", key=f"tra_{active_unit}")
+                o_c = "Motorcycle Multi-Oil"
+            else:
+                c1, c2 = st.columns(2)
+                o_g, o_q = c1.text_input("Grade", key=f"og_{active_unit}"), c2.text_input("Liters", key=f"oq_{active_unit}")
+                o_c = st.selectbox("Oil Type", ["Full Synthetic", "High Mileage", "Synthetic Blend", "Conventional"], key=f"oc_{active_unit}")
+                o_f = st.text_input("Filter #", key=f"of_{active_unit}")
+            nxt = l_km + 8000
+            
         elif l_t == "Tire Swap":
             t_sea = st.radio("Installed", ["Winters ❄️", "Summers ☀️"], key=f"ts_{active_unit}")
             def_d = datetime(2026,12,1) if "Summers" in t_sea else datetime(2027,3,15)
@@ -75,7 +90,7 @@ with col1:
             if photo:
                 p_p = f"{IMG}/{active_unit.replace(' ','_')}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg"
                 Image.open(photo).save(p_p)
-            new_r = [datetime.now().strftime("%Y-%m-%d"), active_unit, l_km, nxt, l_t, l_ref, o_g, o_q, o_c, o_f, a_f, bat, t_s, t_sea, str(t_d), l_b, h_b, fog, blk, dom, str(ins), str(reg), p_p, l_notes]
+            new_r = [datetime.now().strftime("%Y-%m-%d"), active_unit, l_km, nxt, l_t, l_ref, o_g, o_q, o_c, o_f, pri, tra, a_f, bat, t_s, t_sea, str(t_d), l_b, h_b, fog, blk, dom, str(ins), str(reg), p_p, l_notes]
             save_df(pd.concat([get_df(LOG), pd.DataFrame([new_r], columns=COLS)]), LOG)
             st.rerun()
 
@@ -88,9 +103,9 @@ with col2:
         if edit_mode:
             edited_df = st.data_editor(unit_h, use_container_width=True, hide_index=True, num_rows="dynamic")
             if st.button("💾 Save Changes"):
-                non_unit_data = hist[hist["Unit"] != active_unit]
-                final_df = pd.concat([non_unit_data, edited_df], ignore_index=True)
-                save_df(final_df, LOG); st.success("Updated!"); st.rerun()
+                non_unit = hist[hist["Unit"] != active_unit]
+                save_df(pd.concat([non_unit, edited_df], ignore_index=True), LOG)
+                st.success("Updated!"); st.rerun()
         else:
             st.dataframe(unit_h, use_container_width=True, hide_index=True)
         if not unit_h.empty and pd.notna(unit_h.iloc[0]['Photo']):
