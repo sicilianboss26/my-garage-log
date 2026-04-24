@@ -1,1 +1,0 @@
-# my-garage-log
