@@ -25,11 +25,11 @@ if not os.path.exists(LOG):
 def get_df(f): return pd.read_csv(f)
 def save_df(df, f): df.to_csv(f, index=False)
 
-# --- 3. SIDEBAR: VEHICLES ---
+# --- 3. SIDEBAR: VEHICLE MANAGEMENT ---
 fleet_df = get_df(FLEET)
 active_unit, unit_cat = None, "Car"
 
-with st.sidebar.expander("➕ Add Vehicle"):
+with st.sidebar.expander("➕ Add New Vehicle"):
     vy = st.selectbox("Year", range(2027, 1980, -1))
     vma, vmo = st.text_input("Make"), st.text_input("Model")
     vct = st.radio("Category", ["Car", "Truck", "Motorcycle"])
@@ -39,17 +39,19 @@ with st.sidebar.expander("➕ Add Vehicle"):
 
 if not fleet_df.empty:
     fleet_df["D"] = fleet_df["Year"].astype(str) + " " + fleet_df["Make"] + " " + fleet_df["Model"]
-    active_unit = st.sidebar.selectbox("Select Vehicle", fleet_df["D"].tolist())
+    active_unit = st.sidebar.selectbox("Select Active Vehicle", fleet_df["D"].tolist())
     unit_cat = fleet_df[fleet_df["D"] == active_unit]["Category"].values[0]
-    if st.sidebar.button("🗑️ Delete Vehicle"):
-        if st.sidebar.checkbox("Confirm?"):
+    
+    st.sidebar.markdown("---")
+    if st.sidebar.button("🗑️ Delete Selected Vehicle"):
+        if st.sidebar.checkbox("Confirm Delete?"):
             save_df(fleet_df[fleet_df["D"] != active_unit].drop(columns=["D"]), FLEET)
             save_df(get_df(LOG)[get_df(LOG)["Unit"] != active_unit], LOG); st.rerun()
 
-# --- 4. MAIN ---
+# --- 4. MAIN DASHBOARD ---
 st.title("🛠️ The Garage Hub")
 if not active_unit:
-    st.info("👈 Add a vehicle to begin."); st.stop()
+    st.info("👈 Add a vehicle in the sidebar to begin."); st.stop()
 
 c1, c2 = st.columns([1, 2], gap="large")
 with c1:
@@ -60,54 +62,53 @@ with c1:
         o_g, o_q, o_c, o_f, pri, tra, a_f, bat, t_s, f_sz, r_sz, l_b, h_b, fog, blk, dom, ins, reg, p_p, nxt = "","","","","","","","","","", "","","","","","","","", "", 0
         
         if l_t == "Tire Service":
-            st.write("🔧 **Front Tire**")
+            st.write("🏍️ **Front Tire**")
             f1, f2, f3 = st.columns(3)
-            fw = f1.text_input("Width", placeholder="225", key="fw")
-            fa = f2.text_input("Ratio", placeholder="65", key="fa")
-            fr = f3.text_input("Rim", placeholder="17", key="fr")
+            fw, fa, fr = f1.text_input("Width", key="fw"), f2.text_input("Ratio", key="fa"), f3.text_input("Rim", key="fr")
             f_sz = f"{fw}/{fa}R{fr}" if fw and fa and fr else ""
 
-            st.write("🔧 **Rear Tire**")
+            st.write("🏍️ **Rear Tire**")
             r1, r2, r3 = st.columns(3)
-            rw = r1.text_input("Width ", placeholder="225", key="rw")
-            ra = r2.text_input("Ratio ", placeholder="65", key="ra")
-            rr = r3.text_input("Rim ", placeholder="17", key="rr")
+            rw, ra, rr = r1.text_input("Width ", key="rw"), r2.text_input("Ratio ", key="ra"), r3.text_input("Rim ", key="rr")
             r_sz = f"{rw}/{ra}R{rr}" if rw and ra and rr else ""
             
-            t_s = st.text_input("Brand/Model (e.g. Michelin Pilot)", key="brand")
+            t_s = st.text_input("Tire Brand/Model", key="brand")
 
         elif l_t == "Oil Change":
             if unit_cat == "Motorcycle":
-                o_g, o_f = st.text_input("Grade", key=f"og_{active_unit}"), st.text_input("Filter #", key=f"of_{active_unit}")
-                o_c = st.selectbox("Category", ["Mineral", "V-Twin Specific", "Full Synthetic"], key=f"oc_{active_unit}")
-                pri, tra = st.text_input("Primary Oil", key=f"pri_{active_unit}"), st.text_input("Trans Oil", key=f"tr_{active_unit}")
+                st.markdown("**Engine**"); c1, c2 = st.columns(2)
+                o_g, o_f = c1.text_input("Grade", key="og"), c2.text_input("Filter #", key="of")
+                o_c = st.selectbox("Type", ["Mineral", "V-Twin Specific", "Full Synthetic"], key="oc")
+                st.markdown("**Drivetrain**"); c3, c4 = st.columns(2)
+                pri, tra = c3.text_input("Primary Oil", key="pri"), c4.text_input("Trans Oil", key="tra")
             else:
-                o_g, o_c = st.text_input("Grade", key=f"og_{active_unit}"), st.selectbox("Category", ["Full Synthetic", "High Mileage", "Conventional"], key=f"oc_{active_unit}")
-                o_f = st.text_input("Filter #", key=f"of_{active_unit}")
+                o_g, o_c = st.text_input("Grade", key="og"), st.selectbox("Type", ["Full Synthetic", "High Mileage", "Conventional"], key="oc")
+                o_f = st.text_input("Filter #", key="of")
             nxt = l_km + 8000
 
         l_ref, l_notes = st.text_input("Ref #", key=f"rf_{active_unit}"), st.text_area("Notes", key=f"n_{active_unit}")
-        gal = st.file_uploader("Upload Image", type=['jpg', 'jpeg', 'png'], key=f"g_{active_unit}")
-        if st.button("Commit"):
+        gal = st.file_uploader("Upload Image/Invoice", type=['jpg', 'jpeg', 'png'], key=f"g_{active_unit}")
+        if st.button("Commit to Log"):
             if gal:
                 p_p = f"{IMG}/{active_unit.replace(' ','_')}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg"
                 Image.open(gal).save(p_p)
             save_df(pd.concat([get_df(LOG), pd.DataFrame([[datetime.now().strftime("%Y-%m-%d"), active_unit, l_km, nxt, l_t, l_ref, o_g, o_q, o_c, o_f, pri, tra, a_f, bat, t_s, f_sz, r_sz, l_b, h_b, fog, blk, dom, str(ins), str(reg), p_p, l_notes]], columns=COLS)]), LOG); st.rerun()
 
 with c2:
-    st.subheader(f"📊 History")
+    st.subheader(f"📊 Service History")
     hist = get_df(LOG)
     if not hist.empty:
         u_h = hist[hist["Unit"] == active_unit].sort_values("KM", ascending=False)
         p_rows = u_h[u_h["Photo"].notna() & (u_h["Photo"] != "")]
         if not p_rows.empty:
             with st.expander("🔍 View Photos"):
-                sd = st.selectbox("Date", p_rows["Date"].tolist())
+                sd = st.selectbox("Select Date", p_rows["Date"].tolist())
                 st.image(p_rows[p_rows["Date"] == sd]["Photo"].values[0])
-        edit = st.toggle("🔓 Edit Mode")
+        
+        edit = st.toggle("🔓 Enable Edit Mode")
         if edit:
             ed = st.data_editor(u_h, use_container_width=True, hide_index=True, num_rows="dynamic")
-            if st.button("💾 Save"):
+            if st.button("💾 Save Changes"):
                 save_df(pd.concat([hist[hist["Unit"] != active_unit], ed], ignore_index=True), LOG); st.rerun()
         else:
             st.dataframe(u_h, use_container_width=True, hide_index=True)
