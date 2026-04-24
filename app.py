@@ -5,7 +5,7 @@ import os
 
 # --- CONFIG ---
 st.set_page_config(page_title="Fleet Command Pro", page_icon="🛡️", layout="wide")
-PASSWORD = "1234" 
+PASSWORD = "yourpassword123" 
 LOG_FILE = "maintenance_log.csv"
 FLEET_FILE = "fleet_database.csv"
 
