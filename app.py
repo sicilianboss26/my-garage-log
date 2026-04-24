@@ -22,7 +22,7 @@ def save_data(df, file): df.to_csv(file, index=False)
 # --- SIDEBAR ---
 with st.sidebar:
     st.title("🔐 Access")
-    if st.text_input("Code", type="password") != PASSWORD: st.stop()
+    if st.text_input("Code", type="1234") != PASSWORD: st.stop()
     st.divider()
 
 fleet_df = get_data(FLEET_FILE)
