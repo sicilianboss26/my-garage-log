@@ -16,8 +16,6 @@ if pin != "1234":
 # --- 2. DATA ---
 LOG, FLEET, IMG = "maintenance_log.csv", "fleet_database.csv", "service_photos"
 if not os.path.exists(IMG): os.makedirs(IMG)
-
-# Use 'Category' consistently
 if not os.path.exists(FLEET):
     pd.DataFrame(columns=["Year", "Make", "Model", "Category"]).to_csv(FLEET, index=False)
 
@@ -36,7 +34,6 @@ unit_cat = "Car"
 if not fleet_df.empty:
     fleet_df["D"] = fleet_df["Year"].astype(str) + " " + fleet_df["Make"] + " " + fleet_df["Model"]
     active_unit = st.sidebar.selectbox("Select Vehicle", fleet_df["D"].tolist())
-    # Fixed the KeyError by ensuring the name matches the column created above
     unit_cat = fleet_df[fleet_df["D"] == active_unit]["Category"].values[0]
 
 with st.sidebar.expander("➕ Add Vehicle"):
@@ -57,50 +54,40 @@ if not active_unit:
 
 col1, col2 = st.columns([1, 2], gap="large")
 with col1:
-    st.subheader("📝 New Log")
+    st.subheader(f"📝 Log for {active_unit}")
+    # Using a unique key for the container to force a refresh when vehicle changes
     with st.container(border=True):
-        l_km = st.number_input("Current KM", min_value=0, step=1)
-        l_type = st.selectbox("Activity", ["Oil Change", "Tire Swap", "Bulbs", "Battery", "Repair", "Legal"])
+        l_km = st.number_input("Current KM", min_value=0, step=1, key=f"km_{active_unit}")
+        l_type = st.selectbox("Activity", ["Oil Change", "Tire Swap", "Bulbs", "Battery", "Repair", "Legal"], key=f"type_{active_unit}")
         
         o_g, o_q, o_c, o_f, a_f, bat, t_s, t_sea, t_d, l_b, h_b, fog, blk, dom, ins, reg, p_p, nxt = "","","","","","","","","","","","","","","", "", "", 0
         
         if l_type == "Oil Change":
             c1, c2 = st.columns(2)
-            o_g, o_q = c1.text_input("Oil Grade"), c2.text_input("Liters")
+            # Keys now include the vehicle name so they don't 'bleed' over
+            o_g = c1.text_input("Oil Grade", key=f"og_{active_unit}")
+            o_q = c2.text_input("Liters", key=f"oq_{active_unit}")
             if unit_cat == "Motorcycle":
-                o_c = st.selectbox("Oil Category", ["Synthetic Blend", "Full Synthetic", "Mineral", "V-Twin Specific"])
+                o_c = st.selectbox("Oil Category", ["Synthetic Blend", "Full Synthetic", "Mineral", "V-Twin Specific"], key=f"oc_{active_unit}")
             else:
-                o_c = st.selectbox("Oil Category", ["Full Synthetic", "High Mileage", "Synthetic Blend", "Conventional"])
-            o_f, nxt = st.text_input("Oil Filter #"), l_km + 8000
+                o_c = st.selectbox("Oil Category", ["Full Synthetic", "High Mileage", "Synthetic Blend", "Conventional"], key=f"oc_{active_unit}")
+            o_f = st.text_input("Oil Filter #", key=f"of_{active_unit}")
+            nxt = l_km + 8000
             
         elif l_type == "Tire Swap":
-            t_sea = st.radio("Installed", ["Winters ❄️", "Summers ☀️"])
+            t_sea = st.radio("Installed", ["Winters ❄️", "Summers ☀️"], key=f"ts_{active_unit}")
             def_d = datetime(2026,12,1) if "Summers" in t_sea else datetime(2027,3,15)
-            t_d = st.date_input("Next Deadline", value=def_d)
+            t_d = st.date_input("Next Deadline", value=def_d, key=f"td_{active_unit}")
             
         elif l_type == "Bulbs":
-            l_b, h_b = st.text_input("Low Beam"), st.text_input("High Beam")
-            fog, blk = st.text_input("Fogs"), st.text_input("Blinker/Brake")
+            l_b = st.text_input("Low Beam", key=f"lb_{active_unit}")
+            h_b = st.text_input("High Beam", key=f"hb_{active_unit}")
+            fog = st.text_input("Fogs", key=f"fg_{active_unit}")
+            blk = st.text_input("Blinker/Brake", key=f"bl_{active_unit}")
             
         elif l_type == "Legal":
-            ins, reg = st.date_input("Insurance"), st.date_input("Plates")
+            ins = st.date_input("Insurance", key=f"in_{active_unit}")
+            reg = st.date_input("Plates", key=f"rg_{active_unit}")
 
-        l_ref, l_notes = st.text_input("Part # / Ref"), st.text_area("Notes")
-        photo = st.camera_input("Photo")
-
-        if st.button("Save Entry"):
-            if photo:
-                p_p = f"{IMG}/{active_unit.replace(' ','_')}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg"
-                Image.open(photo).save(p_p)
-            new_data = [datetime.now().strftime("%Y-%m-%d"), active_unit, l_km, nxt, l_type, l_ref, o_g, o_q, o_c, o_f, a_f, bat, t_s, t_sea, str(t_d), l_b, h_b, fog, blk, dom, str(ins), str(reg), p_p, l_notes]
-            save_df(pd.concat([get_df(LOG), pd.DataFrame([new_data], columns=COLS)]), LOG)
-            st.rerun()
-
-with col2:
-    st.subheader(f"📊 {active_unit} History")
-    hist = get_df(LOG)
-    if not hist.empty:
-        df_show = hist[hist["Unit"] == active_unit].sort_values("KM", ascending=False)
-        st.dataframe(df_show, use_container_width=True, hide_index=True)
-        if not df_show.empty and pd.notna(df_show.iloc[0]['Photo']):
-            if df_show.iloc[0]['Photo'] != "": st.image(df_show.iloc[0]['Photo'])
+        l_ref = st.text_input("Part # / Ref", key=f"ref_{active_unit}")
+        l_
