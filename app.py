@@ -58,8 +58,24 @@ with c1:
         l_km = st.number_input("KM", min_value=0, step=1, key=f"k_{active_unit}")
         l_t = st.selectbox("Activity", ["Oil Change", "Tire Service", "Bulbs", "Battery", "Repair", "Legal"], key=f"t_{active_unit}")
         o_g, o_q, o_c, o_f, pri, tra, a_f, bat, t_s, f_sz, r_sz, l_b, h_b, fog, blk, dom, ins, reg, p_p, nxt = "","","","","","","","","","", "","","","","","","","", "", 0
+        
         if l_t == "Tire Service":
-            f_sz, r_sz = st.text_input("Front Size", key=f"fs_{active_unit}"), st.text_input("Rear Size", key=f"rs_{active_unit}")
+            st.write("🔧 **Front Tire**")
+            f1, f2, f3 = st.columns(3)
+            fw = f1.text_input("Width", placeholder="225", key="fw")
+            fa = f2.text_input("Ratio", placeholder="65", key="fa")
+            fr = f3.text_input("Rim", placeholder="17", key="fr")
+            f_sz = f"{fw}/{fa}R{fr}" if fw and fa and fr else ""
+
+            st.write("🔧 **Rear Tire**")
+            r1, r2, r3 = st.columns(3)
+            rw = r1.text_input("Width ", placeholder="225", key="rw")
+            ra = r2.text_input("Ratio ", placeholder="65", key="ra")
+            rr = r3.text_input("Rim ", placeholder="17", key="rr")
+            r_sz = f"{rw}/{ra}R{rr}" if rw and ra and rr else ""
+            
+            t_s = st.text_input("Brand/Model (e.g. Michelin Pilot)", key="brand")
+
         elif l_t == "Oil Change":
             if unit_cat == "Motorcycle":
                 o_g, o_f = st.text_input("Grade", key=f"og_{active_unit}"), st.text_input("Filter #", key=f"of_{active_unit}")
@@ -67,7 +83,9 @@ with c1:
                 pri, tra = st.text_input("Primary Oil", key=f"pri_{active_unit}"), st.text_input("Trans Oil", key=f"tr_{active_unit}")
             else:
                 o_g, o_c = st.text_input("Grade", key=f"og_{active_unit}"), st.selectbox("Category", ["Full Synthetic", "High Mileage", "Conventional"], key=f"oc_{active_unit}")
+                o_f = st.text_input("Filter #", key=f"of_{active_unit}")
             nxt = l_km + 8000
+
         l_ref, l_notes = st.text_input("Ref #", key=f"rf_{active_unit}"), st.text_area("Notes", key=f"n_{active_unit}")
         gal = st.file_uploader("Upload Image", type=['jpg', 'jpeg', 'png'], key=f"g_{active_unit}")
         if st.button("Commit"):
