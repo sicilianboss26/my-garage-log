@@ -16,8 +16,10 @@ if pin != "1234":
 # --- 2. DATA ---
 LOG, FLEET, IMG = "maintenance_log.csv", "fleet_database.csv", "service_photos"
 if not os.path.exists(IMG): os.makedirs(IMG)
+
+# Use 'Category' consistently
 if not os.path.exists(FLEET):
-    pd.DataFrame(columns=["Year", "Make", "Model", "Cat"]).to_csv(FLEET, index=False)
+    pd.DataFrame(columns=["Year", "Make", "Model", "Category"]).to_csv(FLEET, index=False)
 
 COLS = ["Date", "Unit", "KM", "Next_KM", "Type", "Ref", "Oil_G", "Oil_Q", "Oil_Cat", "Oil_F", "Air_F", "Batt", "Tire_S", "Tire_Sea", "Tire_D", "Low_B", "High_B", "Fog", "Blink", "Dom", "Ins", "Reg", "Photo", "Notes"]
 if not os.path.exists(LOG):
@@ -30,18 +32,22 @@ def save_df(df, f): df.to_csv(f, index=False)
 fleet_df = get_df(FLEET)
 active_unit = None
 unit_cat = "Car"
+
 if not fleet_df.empty:
     fleet_df["D"] = fleet_df["Year"].astype(str) + " " + fleet_df["Make"] + " " + fleet_df["Model"]
     active_unit = st.sidebar.selectbox("Select Vehicle", fleet_df["D"].tolist())
-    unit_cat = fleet_df[fleet_df["D"] == active_unit]["Cat"].values[0]
+    # Fixed the KeyError by ensuring the name matches the column created above
+    unit_cat = fleet_df[fleet_df["D"] == active_unit]["Category"].values[0]
 
 with st.sidebar.expander("➕ Add Vehicle"):
     vy = st.selectbox("Year", range(2027, 1980, -1))
     vma, vmo = st.text_input("Make"), st.text_input("Model")
     vct = st.radio("Type", ["Car", "Truck", "Motorcycle"])
     if st.button("Save Vehicle"):
-        save_df(pd.concat([get_df(FLEET), pd.DataFrame([{"Year":vy,"Make":vma,"Model":vmo,"Cat":vct}])]), FLEET)
-        st.rerun()
+        if vma and vmo:
+            new_v = pd.DataFrame([{"Year":vy,"Make":vma,"Model":vmo,"Category":vct}])
+            save_df(pd.concat([get_df(FLEET), new_v], ignore_index=True), FLEET)
+            st.rerun()
 
 # --- 4. DASHBOARD ---
 st.title("🛠️ The Garage Hub")
@@ -60,20 +66,22 @@ with col1:
         
         if l_type == "Oil Change":
             c1, c2 = st.columns(2)
-            o_g = c1.text_input("Oil Grade")
-            o_q = c2.text_input("Liters")
+            o_g, o_q = c1.text_input("Oil Grade"), c2.text_input("Liters")
             if unit_cat == "Motorcycle":
                 o_c = st.selectbox("Oil Category", ["Synthetic Blend", "Full Synthetic", "Mineral", "V-Twin Specific"])
             else:
                 o_c = st.selectbox("Oil Category", ["Full Synthetic", "High Mileage", "Synthetic Blend", "Conventional"])
             o_f, nxt = st.text_input("Oil Filter #"), l_km + 8000
+            
         elif l_type == "Tire Swap":
             t_sea = st.radio("Installed", ["Winters ❄️", "Summers ☀️"])
             def_d = datetime(2026,12,1) if "Summers" in t_sea else datetime(2027,3,15)
             t_d = st.date_input("Next Deadline", value=def_d)
+            
         elif l_type == "Bulbs":
             l_b, h_b = st.text_input("Low Beam"), st.text_input("High Beam")
             fog, blk = st.text_input("Fogs"), st.text_input("Blinker/Brake")
+            
         elif l_type == "Legal":
             ins, reg = st.date_input("Insurance"), st.date_input("Plates")
 
