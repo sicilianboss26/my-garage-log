@@ -10,8 +10,7 @@ with st.sidebar:
     st.title("🔧 Antonino's Shop")
     pin = st.text_input("Pin", type="password")
 if pin != "1234":
-    st.info("Awaiting pin...")
-    st.stop()
+    st.info("Awaiting pin..."); st.stop()
 
 # --- 2. DATA ---
 LOG, FLEET, IMG = "maintenance_log.csv", "fleet_database.csv", "service_photos"
@@ -26,7 +25,7 @@ if not os.path.exists(LOG):
 def get_df(f): return pd.read_csv(f)
 def save_df(df, f): df.to_csv(f, index=False)
 
-# --- 3. GARAGE & VEHICLE REMOVAL ---
+# --- 3. GARAGE ---
 fleet_df = get_df(FLEET)
 active_unit, unit_cat = None, "Car"
 
@@ -35,15 +34,11 @@ if not fleet_df.empty:
     active_unit = st.sidebar.selectbox("Select Vehicle", fleet_df["D"].tolist())
     unit_cat = fleet_df[fleet_df["D"] == active_unit]["Category"].values[0]
     
-    if st.sidebar.button("🗑️ Remove Selected Vehicle"):
+    if st.sidebar.button("🗑️ Remove Vehicle"):
         if st.sidebar.checkbox("Confirm Delete?"):
-            # Remove from fleet
-            new_fleet = fleet_df[fleet_df["D"] != active_unit].drop(columns=["D"])
-            save_df(new_fleet, FLEET)
-            # Remove associated logs
-            hist = get_df(LOG)
-            new_hist = hist[hist["Unit"] != active_unit]
-            save_df(new_hist, LOG)
+            save_df(fleet_df[fleet_df["D"] != active_unit].drop(columns=["D"]), FLEET)
+            h = get_df(LOG)
+            save_df(h[h["Unit"] != active_unit], LOG)
             st.rerun()
 
 with st.sidebar.expander("➕ Add Vehicle"):
@@ -53,10 +48,10 @@ with st.sidebar.expander("➕ Add Vehicle"):
         save_df(pd.concat([get_df(FLEET), pd.DataFrame([{"Year":vy,"Make":vma,"Model":vmo,"Category":vct}])]), FLEET)
         st.rerun()
 
-# --- 4. DASHBOARD ---
+# --- 4. MAIN DASH ---
 st.title("🛠️ The Garage Hub")
 if not active_unit:
-    st.info("👈 Add a vehicle in the sidebar to begin."); st.stop()
+    st.info("👈 Add a vehicle to begin."); st.stop()
 
 col1, col2 = st.columns([1, 2], gap="large")
 with col1:
@@ -72,49 +67,52 @@ with col1:
                 o_g, o_f = c1.text_input("Grade", key=f"og_{active_unit}"), c2.text_input("Filter #", key=f"of_{active_unit}")
                 st.markdown("**Drivetrain**"); c3, c4 = st.columns(2)
                 pri, tra = c3.text_input("Primary Oil", key=f"pri_{active_unit}"), c4.text_input("Trans Oil", key=f"tra_{active_unit}")
-                o_c = "Motorcycle Multi-Oil"
             else:
                 c1, c2 = st.columns(2)
                 o_g, o_q = c1.text_input("Grade", key=f"og_{active_unit}"), c2.text_input("Liters", key=f"oq_{active_unit}")
-                o_c = st.selectbox("Oil Type", ["Full Synthetic", "High Mileage", "Synthetic Blend", "Conventional"], key=f"oc_{active_unit}")
+                o_c = st.selectbox("Type", ["Full Synthetic", "High Mileage", "Blend", "Conventional"], key=f"oc_{active_unit}")
                 o_f = st.text_input("Filter #", key=f"of_{active_unit}")
             nxt = l_km + 8000
             
         elif l_t == "Tire Swap":
             t_sea = st.radio("Installed", ["Winters ❄️", "Summers ☀️"], key=f"ts_{active_unit}")
-            def_d = datetime(2026,12,1) if "Summers" in t_sea else datetime(2027,3,15)
-            t_d = st.date_input("Deadline", value=def_d, key=f"td_{active_unit}")
+            t_d = st.date_input("Deadline", value=datetime(2026,12,1) if "Summers" in t_sea else datetime(2027,3,15), key=f"td_{active_unit}")
         elif l_t == "Bulbs":
             l_b, h_b = st.text_input("Low", key=f"lb_{active_unit}"), st.text_input("High", key=f"hb_{active_unit}")
             fog, blk = st.text_input("Fog", key=f"fg_{active_unit}"), st.text_input("Blinker", key=f"bl_{active_unit}")
-        elif l_t == "Legal":
-            ins, reg = st.date_input("Insurance", key=f"i_{active_unit}"), st.date_input("Plates", key=f"r_{active_unit}")
 
         l_ref, l_notes = st.text_input("Part # / Ref", key=f"rf_{active_unit}"), st.text_area("Notes", key=f"n_{active_unit}")
-        photo = st.camera_input("Photo", key=f"p_{active_unit}")
+        
+        # --- UPLOAD OPTIONS ---
+        cam_photo = st.camera_input("Take Photo", key=f"p_{active_unit}")
+        gal_photo = st.file_uploader("Or Upload from Gallery", type=['jpg', 'jpeg', 'png'], key=f"g_{active_unit}")
+        final_photo = cam_photo if cam_photo else gal_photo
 
         if st.button("Commit to Log"):
-            if photo:
+            if final_photo:
                 p_p = f"{IMG}/{active_unit.replace(' ','_')}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg"
-                Image.open(photo).save(p_p)
+                Image.open(final_photo).save(p_p)
             new_r = [datetime.now().strftime("%Y-%m-%d"), active_unit, l_km, nxt, l_t, l_ref, o_g, o_q, o_c, o_f, pri, tra, a_f, bat, t_s, t_sea, str(t_d), l_b, h_b, fog, blk, dom, str(ins), str(reg), p_p, l_notes]
-            save_df(pd.concat([get_df(LOG), pd.DataFrame([new_r], columns=COLS)]), LOG)
-            st.rerun()
+            save_df(pd.concat([get_df(LOG), pd.DataFrame([new_r], columns=COLS)]), LOG); st.rerun()
 
 with col2:
     st.subheader(f"📊 {active_unit} History")
     hist = get_df(LOG)
     if not hist.empty:
-        edit_mode = st.toggle("🔓 Enable Edit Mode")
         unit_h = hist[hist["Unit"] == active_unit].sort_values("KM", ascending=False)
+        
+        # --- PHOTO PREVIEW LOGIC ---
+        photo_rows = unit_h[unit_h["Photo"].notna() & (unit_h["Photo"] != "")]
+        if not photo_rows.empty:
+            with st.expander("🔍 View Service Photos"):
+                selected_date = st.selectbox("Select Date to View Photo", photo_rows["Date"].tolist())
+                img_path = photo_rows[photo_rows["Date"] == selected_date]["Photo"].values[0]
+                st.image(img_path, caption=f"Photo from {selected_date}")
+
+        edit_mode = st.toggle("🔓 Enable Edit Mode")
         if edit_mode:
-            st.info("💡 To remove a photo, clear the text in the 'Photo' column. To remove a row, select it and hit 'Delete' on your keyboard.")
             edited_df = st.data_editor(unit_h, use_container_width=True, hide_index=True, num_rows="dynamic")
             if st.button("💾 Save Changes"):
-                non_unit = hist[hist["Unit"] != active_unit]
-                save_df(pd.concat([non_unit, edited_df], ignore_index=True), LOG)
-                st.success("Updated!"); st.rerun()
+                save_df(pd.concat([hist[hist["Unit"] != active_unit], edited_df], ignore_index=True), LOG); st.rerun()
         else:
             st.dataframe(unit_h, use_container_width=True, hide_index=True)
-        if not unit_h.empty and pd.notna(unit_h.iloc[0]['Photo']):
-            if unit_h.iloc[0]['Photo'] != "": st.image(unit_h.iloc[0]['Photo'])
