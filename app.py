@@ -25,7 +25,7 @@ if not os.path.exists(LOG):
 def get_df(f): return pd.read_csv(f)
 def save_df(df, f): df.to_csv(f, index=False)
 
-# --- 3. SIDEBAR: VEHICLES ---
+# --- 3. SIDEBAR: VEHICLE MANAGEMENT ---
 fleet_df = get_df(FLEET)
 active_unit, unit_cat = None, "Car"
 
@@ -39,9 +39,11 @@ with st.sidebar.expander("➕ Add New Vehicle"):
 
 if not fleet_df.empty:
     fleet_df["D"] = fleet_df["Year"].astype(str) + " " + fleet_df["Make"] + " " + fleet_df["Model"]
-    active_unit = st.sidebar.selectbox("Select Vehicle", fleet_df["D"].tolist())
+    active_unit = st.sidebar.selectbox("Select Active Vehicle", fleet_df["D"].tolist())
     unit_cat = fleet_df[fleet_df["D"] == active_unit]["Category"].values[0]
-    if st.sidebar.button("🗑️ Delete Vehicle"):
+    
+    st.sidebar.markdown("---")
+    if st.sidebar.button("🗑️ Delete Selected Vehicle"):
         if st.sidebar.checkbox("Confirm Delete?"):
             save_df(fleet_df[fleet_df["D"] != active_unit].drop(columns=["D"]), FLEET)
             save_df(get_df(LOG)[get_df(LOG)["Unit"] != active_unit], LOG); st.rerun()
@@ -56,19 +58,33 @@ with c1:
     st.subheader(f"📝 Log: {active_unit}")
     with st.container(border=True):
         l_km = st.number_input("KM", min_value=0, step=1, key=f"k_{active_unit}")
-        # Added Blinkers as its own category here
-        l_t = st.selectbox("Activity", ["Oil Change", "Tire Service", "Bulbs", "Blinkers", "Battery", "Repair", "Legal"], key=f"t_{active_unit}")
+        
+        # Build dynamic list based on category
+        act_list = ["Oil Change", "Tire Service", "Bulbs", "Blinkers", "Battery", "Repair", "Legal"]
+        if unit_cat != "Motorcycle":
+            act_list.insert(act_list.index("Blinkers") + 1, "License Plate Lights")
+            
+        l_t = st.selectbox("Activity", act_list, key=f"t_{active_unit}")
         o_g, o_q, o_c, o_f, pri, tra, a_f, bat, t_s, f_sz, r_sz, l_b, h_b, fog, blk, dom, ins, reg, p_p, nxt = "","","","","","","","","","", "","","","","","","","", "", 0
         
         if l_t == "Blinkers":
-            blk = st.text_input("Blinker Bulb Model/Part #", placeholder="e.g. 7440 / 3157", key="bk_field")
+            blk = st.text_input("Blinker Bulb Model", placeholder="e.g. 1156 / 7440", key="bk_field")
+
+        elif l_t == "License Plate Lights":
+            l_notes = st.text_input("License Plate Bulb Model", placeholder="e.g. 194 / T10", key="lp_field")
 
         elif l_t == "Bulbs":
-            st.write("💡 **Headlights & Interior**")
-            b_col1, b_col2 = st.columns(2)
-            l_b = b_col1.text_input("Low Beam", key="lb")
-            h_b = b_col2.text_input("High Beam", key="hb")
-            if unit_cat != "Motorcycle":
+            # Dynamic header and fields for bike vs car
+            if unit_cat == "Motorcycle":
+                st.write("🏍️ **Headlights**")
+                b_col1, b_col2 = st.columns(2)
+                l_b = b_col1.text_input("Low Beam", key="lb")
+                h_b = b_col2.text_input("High Beam", key="hb")
+            else:
+                st.write("💡 **Headlights & Interior**")
+                b_col1, b_col2 = st.columns(2)
+                l_b = b_col1.text_input("Low Beam", key="lb")
+                h_b = b_col2.text_input("High Beam", key="hb")
                 fog = b_col1.text_input("Fog Lights", key="fg")
                 dom = b_col2.text_input("Dome Lights", key="dm")
 
@@ -89,4 +105,4 @@ with c1:
                 o_g, o_f = m1.text_input("Grade", key="og"), m2.text_input("Filter #", key="of")
                 o_c = st.selectbox("Type", ["Mineral", "V-Twin", "Synthetic"], key="oc")
                 st.markdown("**Drivetrain**"); m3, m4 = st.columns(2)
-                pri, tra = m3.text_input("Primary", key="pri"), m4.text_input("Trans", key="tra")
+                pri, tra = m3
