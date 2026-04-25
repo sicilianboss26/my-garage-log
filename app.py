@@ -13,20 +13,18 @@ st.markdown("""
     .stApp { background-color: #1a1c1e; color: #e0e0e0; }
     section[data-testid="stSidebar"] { background-color: #111214 !important; }
     
-    .login-container {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
+    /* Unified Login Card */
+    .login-box {
         padding: 40px;
         background-color: #262730;
         border-radius: 15px;
         border: 2px solid #ff4b4b;
-        margin: auto;
-        width: 350px;
-        margin-top: 100px;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+        text-align: center;
+        margin-top: 50px;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.5);
     }
+    .login-box h1 { margin-bottom: 5px; }
+    .login-subtitle { color: #888; margin-bottom: 25px; font-size: 0.9em; }
 
     .stButton>button {
         width: 100%;
@@ -35,8 +33,9 @@ st.markdown("""
         background-color: #ff4b4b;
         color: white;
         border: none;
+        font-weight: bold;
     }
-    .stButton>button:hover { background-color: #ff3333; border: none; color: white; }
+    .stButton>button:hover { background-color: #ff3333; color: white; }
     div[data-testid="stExpander"] { border: 1px solid #333; border-radius: 8px; background-color: #262730; }
     h1, h2, h3 { color: #ff4b4b !important; }
     [data-testid="stMetricValue"] { color: #00ff00 !important; }
@@ -48,17 +47,21 @@ if 'authenticated' not in st.session_state:
     st.session_state.authenticated = False
 
 if not st.session_state.authenticated:
-    _, center_col, _ = st.columns([1, 1, 1])
+    _, center_col, _ = st.columns([1, 1.2, 1])
     with center_col:
-        st.markdown('<div class="login-container">', unsafe_allow_html=True)
-        st.title("🔐 Shop Access")
-        input_pin = st.text_input("Enter Garage PIN", type="password", placeholder="****")
+        # Putting the content INSIDE the box to fix the empty look
+        st.markdown('<div class="login-box">', unsafe_allow_html=True)
+        st.markdown("<h1>🔐 Shop Access</h1>", unsafe_allow_html=True)
+        st.markdown("<div class='login-subtitle'>Garage Hub v2.0 | Secure Terminal</div>", unsafe_allow_html=True)
+        
+        input_pin = st.text_input("Enter Shop PIN", type="password", placeholder="****")
+        
         if st.button("Unlock Hub"):
             if input_pin == "1234":
                 st.session_state.authenticated = True
                 st.rerun()
             else:
-                st.error("Access Denied")
+                st.error("Invalid PIN")
         st.markdown('</div>', unsafe_allow_html=True)
     st.stop()
 
@@ -140,7 +143,7 @@ with c1:
         if l_t == "Repair":
             st.write(f"📋 **{sel_comp} Details**")
             parts_data = pd.DataFrame([{"Part": "", "Price": 0.00}])
-            edited_parts = st.data_editor(parts_data, num_rows="dynamic", use_container_width=True, key=f"parts_{active_unit}")
+            edited_parts = st.data_editor(parts_data, num_rows="dynamic", key=f"parts_{active_unit}")
             l_cost = float(edited_parts["Price"].sum())
             st.metric("Final Cost", f"${l_cost:,.2f}")
             l_notes = f"{sel_comp} Repair"
