@@ -125,31 +125,45 @@ with col1:
             pd.concat([pd.read_csv(LOG), row]).to_csv(LOG, index=False); st.rerun()
 
     elif mode == "Diagnostic":
-        # NEW PROFESSIONAL DIAGNOSTIC SCANNER FIELDS
         st.markdown("### ⚡ Diagnostic Scan Report")
         d1, d2 = st.columns(2)
         with d1: 
-            dtc = st.text_input("DTC Codes", placeholder="e.g. P0300, P0420")
+            dtc = st.text_input("DTC Codes")
             abs_c = st.text_input("ABS Codes")
         with d2:
-            srs = st.text_input("SRS Codes", placeholder="e.g. B0088:05")
+            srs = st.text_input("SRS Codes")
             other = st.text_input("Body/Other Codes")
-        
         diag_notes = st.text_area("Live Data / Symptom Notes")
         if st.button("Log Diagnostic Report"):
             summary = f"DTC: {dtc} | SRS: {srs} | ABS: {abs_c} | {diag_notes}"
             row = pd.DataFrame([[datetime.now().strftime("%Y-%m-%d"), active_v, "Diagnostic Scan", km, summary, "", "", "", "", "", "", photo_name]], columns=COLS)
             pd.concat([pd.read_csv(LOG), row]).to_csv(LOG, index=False); st.rerun()
 
+    elif mode == "Bulbs":
+        # NEW ENHANCED BULB SECTION
+        st.markdown("### 💡 Lighting Service")
+        b_loc = st.selectbox("Location", [
+            "Low Beam / High Beam", 
+            "Fog Lights", 
+            "Turn Signals / Markers", 
+            "Tail / Brake Lights", 
+            "Reverse Lights", 
+            "Interior / Cabin", 
+            "Custom / LED Strip"
+        ])
+        b_spec = st.text_input("Bulb Specification", placeholder="e.g. H11 LED, 3157, T10")
+        b_notes = st.text_area("Replacement Notes", placeholder="Brand, Color Temp (6000K), or Wiring notes")
+        
+        if st.button("Save Bulb Log"):
+            row = pd.DataFrame([[datetime.now().strftime("%Y-%m-%d"), active_v, f"Lighting: {b_loc}", km, b_notes, "", "", "", "", "", b_spec, photo_name]], columns=COLS)
+            pd.concat([pd.read_csv(LOG), row]).to_csv(LOG, index=False); st.rerun()
+
 with col2:
     st.subheader("📋 HISTORY")
     hist_df = pd.read_csv(LOG)
     if not hist_df.empty:
-        # Filter for current vehicle
         v_hist = hist_df[hist_df["Vehicle"] == active_v].sort_values(by="Date", ascending=False)
         st.dataframe(v_hist, use_container_width=True, hide_index=True)
-        
-        # INTEGRATED EDIT MODE
         st.divider()
         with st.expander("📝 Edit Mode (Modify History)"):
             if not v_hist.empty:
@@ -159,5 +173,3 @@ with col2:
                     hist_df.drop(target).to_csv(LOG, index=False)
                     st.success("Record purged.")
                     st.rerun()
-            else:
-                st.info("No records found for this vehicle.")
