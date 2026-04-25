@@ -105,7 +105,8 @@ with st.sidebar:
 
     with st.sidebar.expander("➕ Add New Vehicle"):
         vy = st.selectbox("Year", range(2027, 1980, -1))
-        vma, vmo = st.text_input("Make", key="vma"), st.text_input("Model", key="vmo")
+        vma = st.text_input("Make", key="vma")
+        vmo = st.text_input("Model", key="vmo")
         vct = st.radio("Category", ["Car", "Truck", "Motorcycle"])
         if st.button("Save Vehicle"):
             if vma and vmo:
@@ -189,7 +190,7 @@ with c1:
 
         elif l_t == "Legal":
             st.write("📑 **Legal/Papers**")
-            doc = st.selectbox("Doc Type", ["Insurance", "Registration", "Safety"])
+            doc = st.selectbox("Doc Type", ["Insurance", "Registration", "License"])
             l_notes = f"{doc} Update"
 
         extra_n = st.text_area("Notes", placeholder="Specific details...", key=f"notes_{active_unit}")
