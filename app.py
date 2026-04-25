@@ -18,6 +18,7 @@ if not os.path.exists(IMG): os.makedirs(IMG)
 if not os.path.exists(FLEET):
     pd.DataFrame(columns=["Year", "Make", "Model", "Category"]).to_csv(FLEET, index=False)
 
+# Columns to support the expanded battery and lighting data
 COLS = ["Date", "Unit", "KM", "Next_KM", "Type", "Ref", "Oil_G", "Oil_Q", "Oil_Cat", "Oil_F", "Primary_Oil", "Trans_Oil", "Air_F", "Batt", "Tire_S", "Front_Size", "Rear_Size", "Low_B", "High_B", "Fog", "Blink", "Dom", "Ins", "Reg", "Photo", "Notes"]
 if not os.path.exists(LOG):
     pd.DataFrame(columns=COLS).to_csv(LOG, index=False)
@@ -25,7 +26,7 @@ if not os.path.exists(LOG):
 def get_df(f): return pd.read_csv(f)
 def save_df(df, f): df.to_csv(f, index=False)
 
-# --- 3. SIDEBAR: VEHICLES ---
+# --- 3. SIDEBAR ---
 fleet_df = get_df(FLEET)
 active_unit, unit_cat = None, "Car"
 
@@ -56,13 +57,49 @@ with c1:
     st.subheader(f"📝 Log: {active_unit}")
     with st.container(border=True):
         l_km = st.number_input("KM", min_value=0, step=1, key=f"k_{active_unit}")
-        
-        # Cleaned Activity List (Blinkers and Plate lights moved into Bulbs)
         l_t = st.selectbox("Activity", ["Oil Change", "Tire Service", "Bulbs", "Battery", "Repair", "Legal"], key=f"t_{active_unit}")
         o_g, o_q, o_c, o_f, pri, tra, a_f, bat, t_s, f_sz, r_sz, l_b, h_b, fog, blk, dom, ins, reg, p_p, nxt = "","","","","","","","","","", "","","","","","","","", "", 0
         
-        # 1. OIL CHANGE
-        if l_t == "Oil Change":
+        # --- BATTERY CATEGORY (PROFESSIONAL LAYOUT) ---
+        if l_t == "Battery":
+            st.write("🔋 **Electrical System Specs**")
+            b_c1, b_c2 = st.columns(2)
+            b_size = b_c1.text_input("Group Size", placeholder="e.g. H6 / 24 / YTX14L-BS")
+            b_cca = b_c2.text_input("CCA / Amp Hours", placeholder="e.g. 750 / 12Ah")
+            
+            b_c3, b_c4 = st.columns(2)
+            b_volt = b_c3.text_input("Voltage (Static/Running)", placeholder="e.g. 12.6v / 14.2v")
+            b_brand = b_c4.text_input("Brand/Model", placeholder="e.g. Interstate / AGM")
+            
+            bat = f"Size: {b_size} | CCA: {b_cca} | Volts: {b_volt} | Brand: {b_brand}"
+
+        # --- BULBS CATEGORY ---
+        elif l_t == "Bulbs":
+            st.write("💡 **Lighting Maintenance**")
+            l_c1, l_c2 = st.columns(2)
+            l_b = l_c1.text_input("Low Beam", key="lb")
+            h_b = l_c2.text_input("High Beam", key="hb")
+            blk = l_c1.text_input("Blinkers", key="bk")
+            
+            if unit_cat != "Motorcycle":
+                fog = l_c2.text_input("Fog Lights", key="fg")
+                dom = l_c1.text_input("Dome Lights", key="dm")
+                reg = l_c2.text_input("License Plate Lights", key="reg_l")
+
+        # --- TIRE SERVICE ---
+        elif l_t == "Tire Service":
+            st.write("🔧 **Front Tire Size**")
+            t_f1, t_f2, t_f3 = st.columns(3)
+            fw, fa, fr = t_f1.text_input("W", key="fw"), t_f2.text_input("R", key="fa"), t_f3.text_input("D", key="fr")
+            f_sz = f"{fw}/{fa}R{fr}" if fw and fa and fr else ""
+            if unit_cat == "Motorcycle":
+                st.write("🏍️ **Rear Tire Size**")
+                t_r1, t_r2, t_r3 = st.columns(3)
+                rw, ra, rr = t_r1.text_input("W ", key="rw"), t_r2.text_input("R ", key="ra"), t_r3.text_input("D ", key="rr")
+                r_sz = f"{rw}/{ra}R{rr}" if rw and ra and rr else ""
+
+        # --- OIL CHANGE ---
+        elif l_t == "Oil Change":
             if unit_cat == "Motorcycle":
                 st.markdown("**Engine**"); m1, m2 = st.columns(2)
                 o_g, o_f = m1.text_input("Grade", key="og"), m2.text_input("Filter #", key="of")
@@ -74,31 +111,6 @@ with c1:
                 o_g, o_c = o1.text_input("Grade", key="og"), o2.selectbox("Type", ["Full Synthetic", "High Mileage", "Conventional"], key="oc")
                 o_f = st.text_input("Filter #", key="of")
             nxt = l_km + 8000
-
-        # 2. TIRE SERVICE
-        elif l_t == "Tire Service":
-            st.write("🔧 **Front Tire Size**")
-            f1, f2, f3 = st.columns(3)
-            fw, fa, fr = f1.text_input("W", key="fw"), f2.text_input("R", key="fa"), f3.text_input("D", key="fr")
-            f_sz = f"{fw}/{fa}R{fr}" if fw and fa and fr else ""
-            if unit_cat == "Motorcycle":
-                st.write("🏍️ **Rear Tire Size**")
-                r1, r2, r3 = st.columns(3)
-                rw, ra, rr = r1.text_input("W ", key="rw"), r2.text_input("R ", key="ra"), r3.text_input("D ", key="rr")
-                r_sz = f"{rw}/{ra}R{rr}" if rw and ra and rr else ""
-
-        # 3. BULBS (Now includes Blinkers and License Plate)
-        elif l_t == "Bulbs":
-            st.write("💡 **Lighting Maintenance**")
-            b_col1, b_col2 = st.columns(2)
-            l_b = b_col1.text_input("Low Beam", key="lb")
-            h_b = b_col2.text_input("High Beam", key="hb")
-            blk = b_col1.text_input("Blinkers", key="bk")
-            
-            if unit_cat != "Motorcycle":
-                fog = b_col2.text_input("Fog Lights", key="fg")
-                dom = b_col1.text_input("Dome Lights", key="dm")
-                reg = b_col2.text_input("License Plate Lights", key="reg_bulb")
 
         l_notes = st.text_area("General Notes", key=f"n_{active_unit}")
         gal = st.file_uploader("Upload Image", type=['jpg', 'jpeg', 'png'], key=f"g_{active_unit}")
