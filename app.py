@@ -41,10 +41,6 @@ if not fleet_df.empty:
     fleet_df["D"] = fleet_df["Year"].astype(str) + " " + fleet_df["Make"] + " " + fleet_df["Model"]
     active_unit = st.sidebar.selectbox("Select Vehicle", fleet_df["D"].tolist())
     unit_cat = fleet_df[fleet_df["D"] == active_unit]["Category"].values[0]
-    if st.sidebar.button("🗑️ Delete Vehicle"):
-        if st.sidebar.checkbox("Confirm Delete?"):
-            save_df(fleet_df[fleet_df["D"] != active_unit].drop(columns=["D"]), FLEET)
-            save_df(get_df(LOG)[get_df(LOG)["Unit"] != active_unit], LOG); st.rerun()
 
 # --- 4. MAIN DASHBOARD ---
 st.title("🛠️ The Garage Hub")
@@ -55,51 +51,53 @@ c1, c2 = st.columns([1, 2], gap="large")
 with c1:
     st.subheader(f"📝 Log: {active_unit}")
     with st.container(border=True):
-        l_km = st.number_input("KM", min_value=0, step=1, key=f"k_{active_unit}")
         l_t = st.selectbox("Activity", ["Oil Change", "Tire Service", "Bulbs", "Battery", "Repair", "Legal"], key=f"t_{active_unit}")
+        
+        # KM is disabled for Legal
+        l_km = 0
+        if l_t != "Legal":
+            l_km = st.number_input("Current KM", min_value=0, step=1, key=f"k_{active_unit}")
+        else:
+            st.caption("📂 Mileage tracking disabled for Administrative/Legal logs.")
+
         o_g, o_q, o_c, o_f, pri, tra, a_f, bat, t_s, f_sz, r_sz, l_b, h_b, fog, blk, dom, ins, reg, p_p, nxt = "","","","","","","","","","", "","","","","","","","", "", 0
         l_notes = ""
 
-        # --- REPAIR CATEGORY (ADVANCED WORK ORDER) ---
-        if l_t == "Repair":
-            st.write("📋 **Service Work Order**")
+        # --- LEGAL CATEGORY (NEW COMPLIANCE HUB) ---
+        if l_t == "Legal":
+            st.write("📑 **Compliance & Documents**")
+            leg_c1, leg_c2 = st.columns(2)
+            doc_type = leg_c1.selectbox("Document Type", ["Registration", "Insurance", "Safety Inspection", "Permit", "Ownership Transfer"])
+            ref_num = leg_c2.text_input("Policy / Reference #")
             
-            # System selection
+            exp_date = st.date_input("Expiry Date")
+            l_notes = f"Doc: {doc_type} | Ref: {ref_num} | Expires: {exp_date}"
+
+        # --- REPAIR CATEGORY ---
+        elif l_t == "Repair":
+            st.write("📋 **Service Work Order**")
             comp_list = ["Engine", "Transmission", "Drivetrain", "Suspension", "Brakes", "Steering", "Cooling System", "Exhaust", "Fuel System", "Electrical", "Body/Exterior", "Audio/Interior"]
             sel_comp = st.selectbox("System / Component", comp_list)
-            
-            # Action type
             sel_act = st.segmented_control("Action", ["Replace", "Repair", "Flush/Service", "Inspect", "Upgrade"])
             
-            # Parts Inventory Table
             st.write("📦 **Parts & Materials**")
             parts_data = pd.DataFrame([{"Part Name": "", "Part #": "", "Qty": 1, "Price ($)": 0.00}])
             edited_parts = st.data_editor(parts_data, num_rows="dynamic", use_container_width=True, key="repair_table")
             
-            # Calculate Total
-            try:
-                total_cost = (edited_parts["Qty"] * edited_parts["Price ($)"]).sum()
-                st.metric("Estimated Total Parts Cost", f"${total_cost:,.2f}")
-                
-                # Format parts list for notes
-                parts_summary = "; ".join([f"{r['Qty']}x {r['Part Name']} ({r['Part #']})" for _, r in edited_parts.iterrows() if r['Part Name']])
-                l_notes = f"System: {sel_comp} | Action: {sel_act} | Total: ${total_cost:.2f} | Parts: {parts_summary}"
-            except:
-                st.error("Check price/qty format")
+            total_cost = (edited_parts["Qty"] * edited_parts["Price ($)"]).sum()
+            st.metric("Total Parts", f"${total_cost:,.2f}")
+            parts_summary = "; ".join([f"{r['Qty']}x {r['Part Name']}" for _, r in edited_parts.iterrows() if r['Part Name']])
+            l_notes = f"System: {sel_comp} | Action: {sel_act} | Total: ${total_cost:.2f} | Parts: {parts_summary}"
 
-        # --- BATTERY CATEGORY ---
+        # --- BATTERY ---
         elif l_t == "Battery":
-            st.write("🔋 **Electrical System Specs**")
+            st.write("🔋 **Electrical Specs**")
             b_c1, b_c2 = st.columns(2)
-            b_size = b_c1.text_input("Group Size")
-            b_cca = b_c2.text_input("CCA / Amp Hours")
-            b_volt = b_c1.text_input("Voltage (Static/Running)")
-            b_brand = b_c2.text_input("Brand/Model")
-            bat = f"Size: {b_size} | CCA: {b_cca} | Volts: {b_volt} | Brand: {b_brand}"
+            bat = f"Size: {b_c1.text_input('Size')} | CCA: {b_c2.text_input('CCA')} | Volts: {b_c1.text_input('Volts')} | Brand: {b_c2.text_input('Brand')}"
 
-        # --- BULBS CATEGORY ---
+        # --- BULBS ---
         elif l_t == "Bulbs":
-            st.write("💡 **Lighting Maintenance**")
+            st.write("💡 **Lighting**")
             l_c1, l_c2 = st.columns(2)
             l_b, h_b = l_c1.text_input("Low Beam"), l_c2.text_input("High Beam")
             blk = l_c1.text_input("Blinkers")
@@ -108,14 +106,14 @@ with c1:
 
         # --- TIRE SERVICE ---
         elif l_t == "Tire Service":
-            st.write("🔧 **Front Tire Size**")
+            st.write("🔧 **Front Tire**")
             t_f1, t_f2, t_f3 = st.columns(3)
             fw, fa, fr = t_f1.text_input("W"), t_f2.text_input("R"), t_f3.text_input("D")
             f_sz = f"{fw}/{fa}R{fr}" if fw and fa and fr else ""
             if unit_cat == "Motorcycle":
-                st.write("🏍️ **Rear Tire Size**")
-                t_r1, t_r2, t_r3 = st.columns(3)
-                rw, ra, rr = t_r1.text_input("W "), t_r2.text_input("R "), t_r3.text_input("D ")
+                st.write("🏍️ **Rear Tire**")
+                r1, r2, r3 = st.columns(3)
+                rw, ra, rr = r1.text_input("W "), r2.text_input("R "), r3.text_input("D ")
                 r_sz = f"{rw}/{ra}R{rr}" if rw and ra and rr else ""
 
         # --- OIL CHANGE ---
@@ -132,12 +130,11 @@ with c1:
                 o_f = st.text_input("Filter #")
             nxt = l_km + 8000
 
-        # General Add-on Notes
         extra_notes = st.text_area("Final Observations", key=f"ex_{active_unit}")
         if l_notes: l_notes += f" | Obs: {extra_notes}"
         else: l_notes = extra_notes
         
-        gal = st.file_uploader("Upload Image", type=['jpg', 'jpeg', 'png'], key=f"g_{active_unit}")
+        gal = st.file_uploader("Upload Document/Image", type=['jpg', 'jpeg', 'png'], key=f"g_{active_unit}")
         
         if st.button("Commit to Log"):
             if gal:
@@ -146,20 +143,8 @@ with c1:
             save_df(pd.concat([get_df(LOG), pd.DataFrame([[datetime.now().strftime("%Y-%m-%d"), active_unit, l_km, nxt, l_t, "", o_g, o_q, o_c, o_f, pri, tra, a_f, bat, t_s, f_sz, r_sz, l_b, h_b, fog, blk, dom, str(ins), str(reg), p_p, l_notes]], columns=COLS)]), LOG); st.rerun()
 
 with c2:
-    st.subheader(f"📊 Service History")
+    st.subheader(f"📊 History")
     hist = get_df(LOG)
     if not hist.empty:
-        u_h = hist[hist["Unit"] == active_unit].sort_values("KM", ascending=False)
-        p_rows = u_h[u_h["Photo"].notna() & (u_h["Photo"] != "")]
-        if not p_rows.empty:
-            with st.expander("🔍 View Photos"):
-                sd = st.selectbox("Select Date", p_rows["Date"].tolist())
-                st.image(p_rows[p_rows["Date"] == sd]["Photo"].values[0])
-        
-        edit = st.toggle("🔓 Enable Edit Mode")
-        if edit:
-            ed = st.data_editor(u_h, use_container_width=True, hide_index=True, num_rows="dynamic")
-            if st.button("💾 Save Changes"):
-                save_df(pd.concat([hist[hist["Unit"] != active_unit], ed], ignore_index=True), LOG); st.rerun()
-        else:
-            st.dataframe(u_h, use_container_width=True, hide_index=True)
+        u_h = hist[hist["Unit"] == active_unit].sort_values("Date", ascending=False)
+        st.dataframe(u_h, use_container_width=True, hide_index=True)
