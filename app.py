@@ -118,22 +118,21 @@ with col1:
             pd.concat([pd.read_csv(LOG), row]).to_csv(LOG, index=False); st.rerun()
 
     elif mode == "Repair":
-        # REVISED REPAIR SECTION WITH DROPDOWN
+        # REVISED REPAIR SECTION WITH YOUR NEW CATEGORY
         repair_cat = st.selectbox("System Involved", [
             "Engine / Mechanical", 
             "Transmission / Drivetrain",
-            "Electrical / Diagnostic", 
+            "Electrical / Electronics",  # Combined Electronics here
+            "Audio / Custom",             # Cleaned up Audio/Custom here
             "Suspension / Steering", 
             "Brakes / ABS",
             "Exhaust / Emissions",
             "Body / Interior",
-            "Audio / 3D Printing / Custom",
             "General Maintenance"
         ])
-        rep_notes = st.text_area("Work Details", placeholder="Describe the problem and the fix...")
+        rep_notes = st.text_area("Work Details")
         
         if st.button("Save Repair"):
-            # We store the category in the "Type" column and notes in Notes
             row = pd.DataFrame([[datetime.now().strftime("%Y-%m-%d"), active_v, f"Repair: {repair_cat}", km, rep_notes, "", "", "", "", "", "", photo_name]], columns=COLS)
             pd.concat([pd.read_csv(LOG), row]).to_csv(LOG, index=False); st.rerun()
 
