@@ -28,7 +28,7 @@ st.markdown("""
     """, unsafe_allow_html=True)
 
 with st.sidebar:
-    st.title("🔧 Antonino's Shop")
+    st.title("🔧 Enzo's Shop")
     pin = st.text_input("Access Pin", type="password")
 if pin != "1234":
     st.info("Awaiting secure pin..."); st.stop()
@@ -65,16 +65,6 @@ with st.sidebar.expander("➕ Add New Vehicle"):
         save_df(pd.concat([get_df(FLEET), pd.DataFrame([{"Year":vy,"Make":vma,"Model":vmo,"Category":vct}])]), FLEET)
         st.rerun()
 
-if active_unit:
-    with st.sidebar.expander("🗑️ Delete Selected Vehicle"):
-        st.error(f"DANGER: Delete {active_unit}?")
-        confirm_check = st.checkbox("I am sure I want to delete this vehicle.")
-        if confirm_check:
-            if st.button("Confirm Permanent Delete"):
-                new_fleet = fleet_df[fleet_df["D"] != active_unit].drop(columns=['D'])
-                save_df(new_fleet, FLEET)
-                st.rerun()
-
 # --- 4. MAIN DASHBOARD ---
 st.title("🛠️ The Garage Hub")
 if not active_unit:
@@ -85,36 +75,18 @@ c1, c2 = st.columns([1, 2], gap="large")
 with c1:
     st.subheader(f"⚙️ Working on: {active_unit}")
     with st.container(border=True):
-        l_t = st.selectbox("Activity", ["Battery", "Bulbs", "Repair", "Oil Change", "Tire Service", "Legal"], key=f"t_{active_unit}")
+        # STREAMLINED ACTIVITIES
+        l_t = st.selectbox("Activity", ["Repair", "Oil Change", "Tire Service", "Battery"], key=f"t_{active_unit}")
         
-        # KM logic: Removed from Battery, Bulbs, and Legal
         l_km = 0
-        if l_t not in ["Battery", "Bulbs", "Legal"]:
+        if l_t != "Battery":
             l_km = st.number_input("Current KM", min_value=0, step=1, key=f"k_{active_unit}")
         
         o_g, o_f, pri, tra, bat, f_sz, r_sz, l_b, h_b, nxt = "", "", "", "", "", "", "", "", "", 0
         l_cost = 0.0
         l_notes = ""
 
-        if l_t == "Battery":
-            st.write("🔋 **Battery Specs**")
-            b1, b2 = st.columns(2)
-            brand = b1.text_input("Brand")
-            size = b2.text_input("Group Size")
-            cca = b1.text_input("Cold Cranking Amps (CCA)")
-            l_cost = st.number_input("Battery Cost", min_value=0.0, step=0.01)
-            bat = f"{brand} | Size: {size} | CCA: {cca}"
-            l_notes = "New Battery Installation"
-
-        elif l_t == "Bulbs":
-            st.write("💡 **Bulb Replacement**")
-            b_c1, b_c2 = st.columns(2)
-            l_b = b_c1.text_input("Low Beam Spec")
-            h_b = b_c2.text_input("High Beam Spec")
-            l_cost = st.number_input("Bulb Cost", min_value=0.0, step=0.01)
-            l_notes = "Bulb Upgrade/Replacement"
-
-        elif l_t == "Repair":
+        if l_t == "Repair":
             st.write("📋 **Work Details**")
             sel_comp = st.selectbox("System", ["Engine", "Transmission", "Suspension", "Brakes", "Electrical", "Body", "Audio"])
             parts_data = pd.DataFrame([{"Part": "", "Price": 0.00}])
@@ -135,7 +107,16 @@ with c1:
             f_sz = f"{t_f1.text_input('W')}/{t_f2.text_input('R')}R{t_f3.text_input('D')}"
             l_cost = st.number_input("Service Cost", min_value=0.0, step=0.01)
 
-        extra_n = st.text_area("Notes", placeholder="Specific details here...", key=f"notes_{active_unit}")
+        elif l_t == "Battery":
+            st.write("🔋 **Battery Specs**")
+            b1, b2 = st.columns(2)
+            brand = b1.text_input("Brand")
+            size = b2.text_input("Group Size")
+            cca = b1.text_input("CCA")
+            l_cost = st.number_input("Battery Cost", min_value=0.0, step=0.01)
+            bat = f"{brand} | Size: {size} | CCA: {cca}"
+
+        extra_n = st.text_area("Notes", placeholder="Specific details...", key=f"notes_{active_unit}")
         l_notes = f"{l_notes} | {extra_n}" if l_notes else extra_n
         gal = st.file_uploader("Photo/Receipt", type=['jpg', 'jpeg', 'png'], key=f"g_{active_unit}")
         
@@ -154,14 +135,15 @@ with c2:
     
     hist = get_df(LOG)
     if not hist.empty:
-        u_h = hist[hist["Unit"] == active_unit].sort_values("Date", ascending=False)
+        # FILTERED HISTORY: Only show the categories you want
+        u_h = hist[(hist["Unit"] == active_unit) & (hist["Type"].isin(["Repair", "Oil Change", "Tire Service", "Battery"]))].sort_values("Date", ascending=False)
         
         with tab1:
             st.dataframe(u_h[["Date", "Type", "KM", "Notes"]], use_container_width=True, hide_index=True)
             if st.toggle("🔓 Edit Entries"):
                 edited_df = st.data_editor(u_h, use_container_width=True, hide_index=True)
                 if st.button("Apply Changes"):
-                    save_df(pd.concat([hist[hist["Unit"] != active_unit], edited_df], ignore_index=True), LOG)
+                    save_df(pd.concat([hist[~hist.index.isin(u_h.index)], edited_df], ignore_index=True), LOG)
                     st.rerun()
 
         with tab2:
