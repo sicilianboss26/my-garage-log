@@ -98,11 +98,16 @@ with c1:
             l_notes = f"{sel_comp} Repair"
 
         elif l_t == "Oil Change":
+            st.write("🛢️ **Engine Fluid**")
             m1, m2 = st.columns(2)
-            o_g, o_f = m1.text_input("Grade"), m2.text_input("Filter #")
+            o_g, o_f = m1.text_input("Oil Grade/Brand"), m2.text_input("Filter Model #")
+            
             if unit_cat == "Motorcycle":
-                m3, m4 = st.columns(2); pri, tra = m3.text_input("Primary"), m4.text_input("Trans")
-            l_cost = st.number_input("Oil/Parts Cost", min_value=0.0, step=0.01)
+                st.write("⛓️ **Drivetrain Fluids**")
+                m3, m4 = st.columns(2)
+                pri, tra = m3.text_input("Primary Oil"), m4.text_input("Transmission Oil")
+            
+            l_cost = st.number_input("Total Fluid/Parts Cost", min_value=0.0, step=0.01)
             nxt = l_km + 8000
 
         elif l_t == "Tire Service":
@@ -127,7 +132,6 @@ with c1:
             l_b, h_b = b_c1.text_input("Low Beam Spec"), b_c2.text_input("High Beam Spec")
             st.write("🚨 **Rear Lighting**")
             b_c3, b_c4 = st.columns(2)
-            # We use these fields to store Brake and Signal for the log
             brake, signal = b_c3.text_input("Brake Light"), b_c4.text_input("Signal Light")
             l_cost = st.number_input("Cost", min_value=0.0, step=0.01)
             l_notes = f"Brake: {brake} | Signal: {signal}"
