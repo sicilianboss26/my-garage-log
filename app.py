@@ -1,5 +1,5 @@
 import streamlit as st
-import pd as pd
+import pandas as pd
 from datetime import datetime
 import os
 from PIL import Image
@@ -124,8 +124,6 @@ with c1:
             parts_data = pd.DataFrame([{"Part": "", "Price": 0.00}])
             edited_parts = st.data_editor(parts_data, num_rows="dynamic", use_container_width=True)
             total_val = edited_parts["Price"].sum()
-            
-            # FIXED LINE 129: Added missing closing brace
             st.metric("Final Cost", f"${total_val:,.2f}")
             l_notes = f"System: {sel_comp} | Action: {sel_act} | Total: ${total_val:.2f}"
 
@@ -150,8 +148,6 @@ with c1:
 
         extra_n = st.text_area("Notes", key=f"notes_{active_unit}")
         l_notes = f"{l_notes} | {extra_n}" if l_notes else extra_n
-        
-        # FIXED LINE 132: Added missing closing quote
         gal = st.file_uploader("Photo/Receipt", type=['jpg', 'jpeg', 'png'], key=f"g_{active_unit}")
         
         if st.button("Save Entry"):
@@ -162,4 +158,14 @@ with c1:
 
 with c2:
     st.subheader(f"📊 Service History")
-    hist = get_
+    hist = get_df(LOG)
+    if not hist.empty:
+        u_h = hist[hist["Unit"] == active_unit].sort_values("Date", ascending=False)
+        edit_mode = st.toggle("🔓 Unlock Management Mode")
+        if edit_mode:
+            edited_df = st.data_editor(u_h, use_container_width=True, hide_index=True, num_rows="dynamic")
+            if st.button("💾 Apply All Changes"):
+                save_df(pd.concat([hist[hist["Unit"] != active_unit], edited_df], ignore_index=True), LOG)
+                st.rerun()
+        else:
+            st.dataframe(u_h, use_container_width=True, hide_index=True)
