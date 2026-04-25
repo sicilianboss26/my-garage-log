@@ -58,4 +58,47 @@ st.markdown("""
 if 'authenticated' not in st.session_state:
     st.session_state.authenticated = False
 
-if not st.
+# Fixed the cut-off logic here
+if not st.session_state.authenticated:
+    _, center_col, _ = st.columns([1, 1.8, 1])
+    with center_col:
+        st.markdown('<div class="login-card">', unsafe_allow_html=True)
+        st.markdown('<div class="shop-title">Antonino\'s</div>', unsafe_allow_html=True)
+        st.markdown('<div class="shop-title" style="font-size: 36px;">Garage Hub</div>', unsafe_allow_html=True)
+        st.markdown('<div class="shop-subtitle">SECURE SYSTEM ENTRY | V3.0</div>', unsafe_allow_html=True)
+        
+        input_pin = st.text_input("Enter Shop PIN", type="password", placeholder="****")
+        
+        if st.button("Unlock Terminal"):
+            if input_pin == "1234":
+                st.session_state.authenticated = True
+                st.rerun()
+            else:
+                st.error("Access Denied")
+        st.markdown('</div>', unsafe_allow_html=True)
+    st.stop()
+
+# --- 3. DATA & DIRECTORIES ---
+LOG, FLEET, IMG = "maintenance_log.csv", "fleet_database.csv", "service_photos"
+if not os.path.exists(IMG): os.makedirs(IMG)
+
+COLS = ["Date", "Unit", "Type", "Cost", "KM", "Next_KM", "Notes", "Photo", "Oil_G", "Oil_F", "Primary_Oil", "Trans_Oil", "Batt", "F_Tire", "R_Tire", "Low_B", "High_B"]
+if not os.path.exists(LOG):
+    pd.DataFrame(columns=COLS).to_csv(LOG, index=False)
+if not os.path.exists(FLEET):
+    pd.DataFrame(columns=["Year", "Make", "Model", "Category"]).to_csv(FLEET, index=False)
+
+# --- 4. SIDEBAR ---
+with st.sidebar:
+    st.title("🔧 Shop Control")
+    if st.button("🔒 Lock App"):
+        st.session_state.authenticated = False
+        st.rerun()
+    st.divider()
+    
+    fleet_df = pd.read_csv(FLEET)
+    active_unit = None
+    
+    if not fleet_df.empty:
+        fleet_df["D"] = fleet_df["Year"].astype(str) + " " + fleet_df["Make"] + " " + fleet_df["Model"]
+        active_unit = st.selectbox
