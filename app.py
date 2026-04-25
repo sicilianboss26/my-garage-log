@@ -1,186 +1,200 @@
-import streamlit as st
-import pandas as pd
-from datetime import datetime
-import os
-from PIL import Image
-
-# --- 1. SETUP & CUSTOM THEME ---
-st.set_page_config(page_title="The Garage Hub", page_icon="🔧", layout="wide")
-
-st.markdown("""
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Garage Hub | Tech Dashboard</title>
     <style>
-    .main { background-color: #1a1c1e; }
-    .stApp { background-color: #1a1c1e; color: #e0e0e0; }
-    section[data-testid="stSidebar"] { background-color: #111214 !important; }
-    .stButton>button {
-        width: 100%;
-        border-radius: 5px;
-        height: 3em;
-        background-color: #ff4b4b;
-        color: white;
-        border: none;
-    }
-    .stButton>button:hover { background-color: #ff3333; border: none; color: white; }
-    div[data-testid="stExpander"] { border: 1px solid #333; border-radius: 8px; background-color: #262730; }
-    h1, h2, h3 { color: #ff4b4b !important; }
-    [data-testid="stMetricValue"] { color: #00ff00 !important; }
+        /* THEME: Dark Industrial (Antonino's Shop Style) */
+        body {
+            background-color: #121212;
+            color: #e0e0e0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            display: flex;
+        }
+
+        /* Sidebar Navigation */
+        #sidebar {
+            width: 260px;
+            background-color: #1a1a1a;
+            height: 100vh;
+            padding: 20px;
+            border-right: 2px solid #333;
+            box-sizing: border-box;
+            position: fixed;
+        }
+
+        .category-label {
+            color: #888;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin: 20px 0 10px 0;
+            display: block;
+        }
+
+        .nav-btn {
+            background: none;
+            border: none;
+            color: #bbb;
+            width: 100%;
+            text-align: left;
+            padding: 10px;
+            font-size: 1rem;
+            cursor: pointer;
+            border-radius: 5px;
+            transition: 0.2s;
+        }
+
+        .nav-btn:hover {
+            background-color: #333;
+            color: #ff9d00;
+        }
+
+        /* RECORDS CATEGORY (The Vault) */
+        .records-vault {
+            margin-top: 15px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 8px;
+        }
+
+        .records-vault summary {
+            padding: 10px;
+            cursor: pointer;
+            color: #ff9d00;
+            font-weight: bold;
+            list-style: none;
+            outline: none;
+        }
+
+        .records-vault summary:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        /* MAIN CONTENT AREA */
+        #main-content {
+            margin-left: 260px;
+            padding: 40px;
+            width: 100%;
+        }
+
+        .module-card {
+            background: #1e1e1e;
+            padding: 25px;
+            border-radius: 12px;
+            border: 1px solid #333;
+            max-width: 600px;
+        }
+
+        h2 { color: #ff9d00; margin-top: 0; }
+
+        /* LICENSE FORM ELEMENTS */
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; color: #aaa; }
+        input[type="text"], input[type="date"], input[type="number"], input[type="file"] {
+            width: 100%;
+            padding: 10px;
+            background: #2a2a2a;
+            border: 1px solid #444;
+            color: white;
+            border-radius: 5px;
+            box-sizing: border-box;
+        }
+
+        .save-btn {
+            background: #ff9d00;
+            color: #000;
+            border: none;
+            padding: 12px 20px;
+            font-weight: bold;
+            border-radius: 5px;
+            cursor: pointer;
+            width: 100%;
+        }
+
+        .save-btn:hover { background: #e68a00; }
     </style>
-    """, unsafe_allow_html=True)
+</head>
+<body>
 
-with st.sidebar:
-    st.title("🔧 Antonino's Shop")
-    pin = st.text_input("Access Pin", type="password")
-if pin != "1234":
-    st.info("Awaiting secure pin..."); st.stop()
-
-# --- 2. DATA ---
-LOG, FLEET, IMG = "maintenance_log.csv", "fleet_database.csv", "service_photos"
-if not os.path.exists(IMG): os.makedirs(IMG)
-if not os.path.exists(FLEET):
-    pd.DataFrame(columns=["Year", "Make", "Model", "Category"]).to_csv(FLEET, index=False)
-
-COLS = ["Date", "Unit", "Type", "Cost", "KM", "Next_KM", "Notes", "Photo", "Oil_G", "Oil_F", "Primary_Oil", "Trans_Oil", "Batt", "F_Tire", "R_Tire", "Low_B", "High_B"]
-if not os.path.exists(LOG):
-    pd.DataFrame(columns=COLS).to_csv(LOG, index=False)
-
-def get_df(f): return pd.read_csv(f)
-def save_df(df, f): df.to_csv(f, index=False)
-
-# --- 3. SIDEBAR / FLEET MANAGEMENT ---
-fleet_df = get_df(FLEET)
-active_unit, unit_cat = None, "Car"
-
-if not fleet_df.empty:
-    fleet_df["D"] = fleet_df["Year"].astype(str) + " " + fleet_df["Make"] + " " + fleet_df["Model"]
-    active_unit = st.sidebar.selectbox("Select Active Vehicle", fleet_df["D"].tolist())
-    unit_cat = fleet_df[fleet_df["D"] == active_unit]["Category"].values[0]
-
-st.sidebar.markdown("---")
-
-with st.sidebar.expander("➕ Add New Vehicle"):
-    vy = st.selectbox("Year", range(2027, 1980, -1))
-    vma, vmo = st.text_input("Make"), st.text_input("Model")
-    vct = st.radio("Category", ["Car", "Truck", "Motorcycle"])
-    if st.button("Save Vehicle") and vma and vmo:
-        new_v = pd.DataFrame([{"Year": vy, "Make": vma, "Model": vmo, "Category": vct}])
-        save_df(pd.concat([get_df(FLEET), new_v]), FLEET)
-        st.rerun()
-
-# --- 4. MAIN DASHBOARD ---
-st.title("🛠️ The Garage Hub")
-if not active_unit:
-    st.info("👈 Add a vehicle in the sidebar to begin."); st.stop()
-
-c1, c2 = st.columns([1, 2], gap="large")
-
-with c1:
-    st.subheader(f"⚙️ Working on: {active_unit}")
-    with st.container(border=True):
-        l_t = st.selectbox("Activity", ["Repair", "Oil Change", "Tire Service", "Battery", "Bulbs", "Legal"], key=f"t_{active_unit}")
+    <div id="sidebar">
+        <h2 style="font-size: 1.2rem; border-bottom: 1px solid #333; padding-bottom: 10px;">GARAGE HUB</h2>
         
-        sel_comp = "None"
-        if l_t == "Repair":
-            sel_comp = st.selectbox("System", ["Engine", "Transmission", "Suspension", "Brakes", "Electrical", "Body", "Audio"])
+        <span class="category-label">Maintenance</span>
+        <button class="nav-btn" onclick="showModule('battery')">Battery Repairs</button>
+        <button class="nav-btn" onclick="showModule('oil')">Oil Changes</button>
+        <button class="nav-btn" onclick="showModule('tires')">Tire Service</button>
 
-        l_km = 0
-        if l_t not in ["Battery", "Bulbs", "Legal"] and sel_comp not in ["Audio", "Body"]:
-            l_km = st.number_input("Current KM", min_value=0, step=1, key=f"k_{active_unit}")
+        <span class="category-label">Legal</span>
+        <button class="nav-btn" onclick="showModule('license')">License & Docs</button>
+
+        <details class="records-vault">
+            <summary>📁 Records</summary>
+            <button class="nav-btn" onclick="showModule('history')">Service History</button>
+            <button class="nav-btn" onclick="showModule('expenses')">Expense Tracker</button>
+        </details>
+    </div>
+
+    <div id="main-content">
         
-        o_g, o_f, pri, tra, bat, f_sz, r_sz, l_b, h_b, nxt = "", "", "", "", "", "", "", "", "", 0
-        l_cost, l_notes = 0.0, ""
-
-        if l_t == "Repair":
-            st.write(f"📋 **{sel_comp} Details**")
-            parts_data = pd.DataFrame([{"Part": "", "Price": 0.00}])
-            edited_parts = st.data_editor(parts_data, num_rows="dynamic", use_container_width=True, key=f"parts_{active_unit}")
-            l_cost = float(edited_parts["Price"].sum())
-            st.metric("Final Cost", f"${l_cost:,.2f}")
-            l_notes = f"{sel_comp} Repair"
-
-        elif l_t == "Oil Change":
-            st.write("🛢️ **Engine Fluid**")
-            m1, m2 = st.columns(2)
-            o_g, o_f = m1.text_input("Oil Grade/Brand"), m2.text_input("Filter Model #")
+        <div id="license-module" class="module-card">
+            <h2>Vehicle License</h2>
+            <p style="color:#888; font-size: 0.9rem;">Management for renewals and legal documentation.</p>
             
-            if unit_cat == "Motorcycle":
-                st.write("⛓️ **Drivetrain Fluids**")
-                m3, m4 = st.columns(2)
-                pri, tra = m3.text_input("Primary Oil"), m4.text_input("Transmission Oil")
-            
-            l_cost = st.number_input("Total Fluid/Parts Cost", min_value=0.0, step=0.01)
-            nxt = l_km + 8000
+            <div class="form-group">
+                <label>Renewal Date</label>
+                <input type="date" id="ren-date">
+            </div>
 
-        elif l_t == "Tire Service":
-            st.write("🛞 **Front Tires**")
-            tf1, tf2, tf3 = st.columns(3)
-            f_sz = f"{tf1.text_input('W', key='fw')}/{tf2.text_input('R', key='fr')}R{tf3.text_input('D', key='fd')}"
-            st.write("🛞 **Rear Tires**")
-            tr1, tr2, tr3 = st.columns(3)
-            r_sz = f"{tr1.text_input('W', key='rw')}/{tr2.text_input('R', key='rr')}R{tr3.text_input('D', key='rd')}"
-            l_cost = st.number_input("Service Cost", min_value=0.0, step=0.01)
+            <div class="form-group">
+                <label>Renewal Fee ($)</label>
+                <input type="number" id="ren-fee" placeholder="0.00">
+            </div>
 
-        elif l_t == "Battery":
-            st.write("🔋 **Battery Specs**")
-            bc1, bc2, bc3 = st.columns(3)
-            brand, group, cca = bc1.text_input("Brand"), bc2.text_input("Group"), bc3.text_input("CCA")
-            l_cost = st.number_input("Battery Cost", min_value=0.0, step=0.01)
-            bat = f"{brand} | Group: {group} | CCA: {cca}"
+            <div class="form-group">
+                <label>Digital Copy (Stored in /Legal/)</label>
+                <input type="file" id="license-file" accept="image/*,.pdf">
+            </div>
 
-        elif l_t == "Bulbs":
-            st.write("🔦 **Front Lighting**")
-            b_c1, b_c2 = st.columns(2)
-            l_b, h_b = b_c1.text_input("Low Beam Spec"), b_c2.text_input("High Beam Spec")
-            st.write("🚨 **Rear Lighting**")
-            b_c3, b_c4 = st.columns(2)
-            brake, signal = b_c3.text_input("Brake Light"), b_c4.text_input("Signal Light")
-            l_cost = st.number_input("Cost", min_value=0.0, step=0.01)
-            l_notes = f"Brake: {brake} | Signal: {signal}"
+            <button class="save-btn" onclick="saveLicense()">Update License Records</button>
+        </div>
 
-        elif l_t == "Legal":
-            st.write("📑 **Legal/Papers**")
-            doc = st.selectbox("Doc Type", ["Insurance", "Registration", "Safety"])
-            l_notes = f"{doc} Update"
+        <div id="other-modules" style="display:none; margin-top: 20px; color: #666;">
+            Module content will load here...
+        </div>
 
-        extra_n = st.text_area("Notes", placeholder="Specific details...", key=f"notes_{active_unit}")
-        l_notes = f"{l_notes} | {extra_n}" if l_notes else extra_n
-        gal = st.file_uploader("Photo/Receipt", type=['jpg', 'jpeg', 'png'], key=f"g_{active_unit}")
-        
-        if st.button("💾 Save Entry"):
-            p_p = ""
-            if gal:
-                p_p = f"{IMG}/{active_unit.replace(' ','_')}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg"
-                Image.open(gal).save(p_p)
-            
-            new_row = pd.DataFrame([[datetime.now().strftime("%Y-%m-%d"), active_unit, l_t, l_cost, l_km, nxt, l_notes, p_p, o_g, o_f, pri, tra, bat, f_sz, r_sz, l_b, h_b]], columns=COLS)
-            save_df(pd.concat([get_df(LOG), new_row]), LOG)
-            st.rerun()
+    </div>
 
-with c2:
-    tab1, tab2 = st.tabs(["📊 Service History", "💰 Expense Tracker"])
-    hist = get_df(LOG)
-    if not hist.empty:
-        u_h = hist[hist["Unit"] == active_unit].sort_values("Date", ascending=False)
-        with tab1:
-            st.dataframe(u_h[["Date", "Type", "KM", "Notes"]], use_container_width=True, hide_index=True)
-            if st.toggle("🔓 Edit Entries"):
-                edited_df = st.data_editor(u_h, use_container_width=True, hide_index=True, key=f"editor_{active_unit}")
-                if st.button("Apply Changes"):
-                    save_df(pd.concat([hist[~hist.index.isin(u_h.index)], edited_df], ignore_index=True), LOG)
-                    st.rerun()
+    <script>
+        function showModule(moduleName) {
+            // Simple logic to switch between views
+            const card = document.getElementById('license-module');
+            const placeholder = document.getElementById('other-modules');
 
-        with tab2:
-            st.subheader("Investment Summaries")
-            finance_df = u_h[u_h["Type"].isin(["Repair", "Oil Change", "Tire Service", "Battery"])]
-            mc1, mc2, mc3, mc4 = st.columns(4)
-            r_sum = finance_df[finance_df["Type"] == "Repair"]["Cost"].sum()
-            o_sum = finance_df[finance_df["Type"] == "Oil Change"]["Cost"].sum()
-            t_sum = finance_df[finance_df["Type"] == "Tire Service"]["Cost"].sum()
-            b_sum = finance_df[finance_df["Type"] == "Battery"]["Cost"].sum()
-            
-            mc1.metric("Repairs", f"${r_sum:,.2f}")
-            mc2.metric("Oil", f"${o_sum:,.2f}")
-            mc3.metric("Tires", f"${t_sum:,.2f}")
-            mc4.metric("Battery", f"${b_sum:,.2f}")
-            st.divider()
-            st.metric("Total Overall Investment", f"${finance_df['Cost'].sum():,.2f}")
-            st.dataframe(finance_df[["Date", "Type", "Cost", "Notes"]].style.format({"Cost": "${:,.2f}"}), use_container_width=True, hide_index=True)
+            if(moduleName === 'license') {
+                card.style.display = 'block';
+                placeholder.style.display = 'none';
+            } else {
+                card.style.display = 'none';
+                placeholder.style.display = 'block';
+                placeholder.innerText = moduleName.toUpperCase() + " Module Active - Load UI for " + moduleName;
+            }
+        }
+
+        function saveLicense() {
+            const date = document.getElementById('ren-date').value;
+            const fee = document.getElementById('ren-fee').value;
+            const file = document.getElementById('license-file').value;
+
+            if(!date || !fee) {
+                alert("Please fill in the date and fee.");
+                return;
+            }
+
+            console.log("Saving to Legal Folder:", { date, fee, file });
+            alert("License information saved successfully in the Legal section.");
+        }
+    </script>
+</body>
+</html>
