@@ -13,18 +13,31 @@ st.markdown("""
     .stApp { background-color: #1a1c1e; color: #e0e0e0; }
     section[data-testid="stSidebar"] { background-color: #111214 !important; }
     
-    /* Unified Login Card */
-    .login-box {
+    /* The Shop Sign / Login Box */
+    .login-terminal {
         padding: 40px;
         background-color: #262730;
         border-radius: 15px;
         border: 2px solid #ff4b4b;
         text-align: center;
         margin-top: 50px;
-        box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+        box-shadow: 0 10px 30px rgba(0,0,0,0.6);
     }
-    .login-box h1 { margin-bottom: 5px; }
-    .login-subtitle { color: #888; margin-bottom: 25px; font-size: 0.9em; }
+    .shop-name { 
+        color: #ff4b4b; 
+        font-size: 2.2em; 
+        font-weight: 900; 
+        margin-bottom: 0px;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+    }
+    .terminal-sub { 
+        color: #888; 
+        font-size: 0.8em; 
+        margin-bottom: 25px; 
+        text-transform: uppercase; 
+        letter-spacing: 1px; 
+    }
 
     .stButton>button {
         width: 100%;
@@ -47,21 +60,22 @@ if 'authenticated' not in st.session_state:
     st.session_state.authenticated = False
 
 if not st.session_state.authenticated:
-    _, center_col, _ = st.columns([1, 1.2, 1])
+    _, center_col, _ = st.columns([1, 1.5, 1]) # Slightly wider center for the name
     with center_col:
-        # Putting the content INSIDE the box to fix the empty look
-        st.markdown('<div class="login-box">', unsafe_allow_html=True)
-        st.markdown("<h1>🔐 Shop Access</h1>", unsafe_allow_html=True)
-        st.markdown("<div class='login-subtitle'>Garage Hub v2.0 | Secure Terminal</div>", unsafe_allow_html=True)
+        st.markdown('<div class="login-terminal">', unsafe_allow_html=True)
+        # Using the box for the Shop Name as the main header
+        st.markdown('<div class="shop-name">ANTONINO\'S</div>', unsafe_allow_html=True)
+        st.markdown('<div class="shop-name" style="font-size:1.8em; margin-bottom:10px;">GARAGE HUB</div>', unsafe_allow_html=True)
+        st.markdown('<div class="terminal-sub">Secure System Entry | v2.2</div>', unsafe_allow_html=True)
         
         input_pin = st.text_input("Enter Shop PIN", type="password", placeholder="****")
         
-        if st.button("Unlock Hub"):
+        if st.button("Unlock Terminal"):
             if input_pin == "1234":
                 st.session_state.authenticated = True
                 st.rerun()
             else:
-                st.error("Invalid PIN")
+                st.error("Access Denied")
         st.markdown('</div>', unsafe_allow_html=True)
     st.stop()
 
@@ -83,7 +97,7 @@ fleet_df = get_df(FLEET)
 active_unit, unit_cat = None, "Car"
 
 with st.sidebar:
-    st.title("🔧 Antonino's Shop")
+    st.title("🔧 Shop Control")
     if st.button("🔒 Lock App"):
         st.session_state.authenticated = False
         st.rerun()
