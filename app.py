@@ -24,4 +24,32 @@ st.markdown("""
         width: 100%; background-color: #ff4b4b; color: white; font-weight: bold; 
         height: 3.5em; border-radius: 5px; border: none; text-transform: uppercase;
     }
-    .stButton>button:hover { background-color: #d43f3f; border: 1px solid white;
+    .stButton>button:hover { background-color: #d43f3f; border: 1px solid white; }
+    section[data-testid="stSidebar"] { background-color: #1c1f26; border-right: 1px solid #444; }
+    </style>
+    """, unsafe_allow_html=True)
+
+# --- 2. LOG IN ---
+if 'auth' not in st.session_state:
+    st.session_state.auth = False
+
+if not st.session_state.auth:
+    _, center, _ = st.columns([1, 1.5, 1])
+    with center:
+        st.markdown('<div class="login-card">', unsafe_allow_html=True)
+        st.markdown('<div class="shop-title">Garage Hub</div>', unsafe_allow_html=True)
+        pin = st.text_input("Enter PIN", type="password")
+        if st.button("Log In"):
+            if pin == "1234":
+                st.session_state.auth = True
+                st.rerun()
+            else:
+                st.error("Access Denied")
+    st.stop()
+
+# --- 3. DATABASE ---
+LOG, FLEET = "maintenance_log.csv", "fleet_database.csv"
+COLS = ["Date", "Vehicle", "Type", "KM", "Notes", "Oil_M", "Oil_P", "Oil_T", "F_Tire", "R_Tire", "Bulbs", "Photo"]
+
+if not os.path.exists(LOG):
+    pd.DataFrame(columns=COLS).to_csv(LOG, index
