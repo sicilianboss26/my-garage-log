@@ -13,7 +13,6 @@ st.markdown("""
     .stApp { background-color: #1a1c1e; color: #e0e0e0; }
     section[data-testid="stSidebar"] { background-color: #111214 !important; }
     
-    /* Login Box Styling */
     .login-container {
         display: flex;
         flex-direction: column;
@@ -106,12 +105,13 @@ with st.sidebar:
 
     with st.sidebar.expander("➕ Add New Vehicle"):
         vy = st.selectbox("Year", range(2027, 1980, -1))
-        vma, vmo = st.text_input("Make"), st.text_input("Model")
+        vma, vmo = st.text_input("Make", key="vma"), st.text_input("Model", key="vmo")
         vct = st.radio("Category", ["Car", "Truck", "Motorcycle"])
-        if st.button("Save Vehicle") and vma and vmo:
-            new_v = pd.DataFrame([{"Year": vy, "Make": vma, "Model": vmo, "Category": vct}])
-            save_df(pd.concat([get_df(FLEET), new_v]), FLEET)
-            st.rerun()
+        if st.button("Save Vehicle"):
+            if vma and vmo:
+                new_v = pd.DataFrame([{"Year": vy, "Make": vma, "Model": vmo, "Category": vct}])
+                save_df(pd.concat([get_df(FLEET), new_v]), FLEET)
+                st.rerun()
 
 # --- 5. MAIN DASHBOARD ---
 st.title("🛠️ The Garage Hub")
@@ -142,4 +142,96 @@ with c1:
             edited_parts = st.data_editor(parts_data, num_rows="dynamic", use_container_width=True, key=f"parts_{active_unit}")
             l_cost = float(edited_parts["Price"].sum())
             st.metric("Final Cost", f"${l_cost:,.2f}")
-            l_
+            l_notes = f"{sel_comp} Repair"
+
+        elif l_t == "Oil Change":
+            st.write("🛢️ **Engine Fluid**")
+            m1, m2 = st.columns(2)
+            o_g = m1.text_input("Oil Grade/Brand")
+            o_f = m2.text_input("Filter Model #")
+            if unit_cat == "Motorcycle":
+                st.write("⛓️ **Drivetrain Fluids**")
+                m3, m4 = st.columns(2)
+                pri = m3.text_input("Primary Oil")
+                tra = m4.text_input("Transmission Oil")
+            l_cost = st.number_input("Total Fluid/Parts Cost", min_value=0.0, step=0.01)
+            nxt = l_km + 8000
+
+        elif l_t == "Tire Service":
+            st.write("🛞 **Front Tires**")
+            tf1, tf2, tf3 = st.columns(3)
+            f_sz = f"{tf1.text_input('W', key='fw')}/{tf2.text_input('R', key='fr')}R{tf3.text_input('D', key='fd')}"
+            st.write("🛞 **Rear Tires**")
+            tr1, tr2, tr3 = st.columns(3)
+            r_sz = f"{tr1.text_input('W', key='rw')}/{tr2.text_input('R', key='rr')}R{tr3.text_input('D', key='rd')}"
+            l_cost = st.number_input("Service Cost", min_value=0.0, step=0.01)
+
+        elif l_t == "Battery":
+            st.write("🔋 **Battery Specs**")
+            bc1, bc2, bc3 = st.columns(3)
+            brand = bc1.text_input("Brand")
+            group = bc2.text_input("Group")
+            cca = bc3.text_input("CCA")
+            l_cost = st.number_input("Battery Cost", min_value=0.0, step=0.01)
+            bat = f"{brand} | Group: {group} | CCA: {cca}"
+
+        elif l_t == "Bulbs":
+            st.write("🔦 **Front Lighting**")
+            b_c1, b_c2 = st.columns(2)
+            l_b = b_c1.text_input("Low Beam Spec")
+            h_b = b_c2.text_input("High Beam Spec")
+            st.write("🚨 **Rear Lighting**")
+            b_c3, b_c4 = st.columns(2)
+            brake = b_c3.text_input("Brake Light")
+            signal = b_c4.text_input("Signal Light")
+            l_cost = st.number_input("Cost", min_value=0.0, step=0.01)
+            l_notes = f"Brake: {brake} | Signal: {signal}"
+
+        elif l_t == "Legal":
+            st.write("📑 **Legal/Papers**")
+            doc = st.selectbox("Doc Type", ["Insurance", "Registration", "Safety"])
+            l_notes = f"{doc} Update"
+
+        extra_n = st.text_area("Notes", placeholder="Specific details...", key=f"notes_{active_unit}")
+        l_notes = f"{l_notes} | {extra_n}" if l_notes else extra_n
+        gal = st.file_uploader("Photo/Receipt", type=['jpg', 'jpeg', 'png'], key=f"g_{active_unit}")
+        
+        if st.button("💾 Save Entry"):
+            p_p = ""
+            if gal:
+                p_p = f"{IMG}/{active_unit.replace(' ','_')}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg"
+                Image.open(gal).save(p_p)
+            
+            new_row = pd.DataFrame([[datetime.now().strftime("%Y-%m-%d"), active_unit, l_t, l_cost, l_km, nxt, l_notes, p_p, o_g, o_f, pri, tra, bat, f_sz, r_sz, l_b, h_b]], columns=COLS)
+            save_df(pd.concat([get_df(LOG), new_row]), LOG)
+            st.rerun()
+
+with c2:
+    tab1, tab2 = st.tabs(["📊 Service History", "💰 Expense Tracker"])
+    hist = get_df(LOG)
+    if not hist.empty:
+        u_h = hist[hist["Unit"] == active_unit].sort_values("Date", ascending=False)
+        with tab1:
+            st.dataframe(u_h[["Date", "Type", "KM", "Notes"]], use_container_width=True, hide_index=True)
+            if st.toggle("🔓 Edit Entries"):
+                edited_df = st.data_editor(u_h, use_container_width=True, hide_index=True, key=f"editor_{active_unit}")
+                if st.button("Apply Changes"):
+                    save_df(pd.concat([hist[~hist.index.isin(u_h.index)], edited_df], ignore_index=True), LOG)
+                    st.rerun()
+
+        with tab2:
+            st.subheader("Investment Summaries")
+            finance_df = u_h[u_h["Type"].isin(["Repair", "Oil Change", "Tire Service", "Battery"])]
+            mc1, mc2, mc3, mc4 = st.columns(4)
+            r_sum = finance_df[finance_df["Type"] == "Repair"]["Cost"].sum()
+            o_sum = finance_df[finance_df["Type"] == "Oil Change"]["Cost"].sum()
+            t_sum = finance_df[finance_df["Type"] == "Tire Service"]["Cost"].sum()
+            b_sum = finance_df[finance_df["Type"] == "Battery"]["Cost"].sum()
+            
+            mc1.metric("Repairs", f"${r_sum:,.2f}")
+            mc2.metric("Oil", f"${o_sum:,.2f}")
+            mc3.metric("Tires", f"${t_sum:,.2f}")
+            mc4.metric("Battery", f"${b_sum:,.2f}")
+            st.divider()
+            st.metric("Total Overall Investment", f"${finance_df['Cost'].sum():,.2f}")
+            st.dataframe(finance_df[["Date", "Type", "Cost", "Notes"]].style.format({"Cost": "${:,.2f}"}), use_container_width=True, hide_index=True)
