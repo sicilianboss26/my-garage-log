@@ -18,7 +18,6 @@ if not os.path.exists(IMG): os.makedirs(IMG)
 if not os.path.exists(FLEET):
     pd.DataFrame(columns=["Year", "Make", "Model", "Category"]).to_csv(FLEET, index=False)
 
-# Columns to support the expanded battery and lighting data
 COLS = ["Date", "Unit", "KM", "Next_KM", "Type", "Ref", "Oil_G", "Oil_Q", "Oil_Cat", "Oil_F", "Primary_Oil", "Trans_Oil", "Air_F", "Batt", "Tire_S", "Front_Size", "Rear_Size", "Low_B", "High_B", "Fog", "Blink", "Dom", "Ins", "Reg", "Photo", "Notes"]
 if not os.path.exists(LOG):
     pd.DataFrame(columns=COLS).to_csv(LOG, index=False)
@@ -59,18 +58,29 @@ with c1:
         l_km = st.number_input("KM", min_value=0, step=1, key=f"k_{active_unit}")
         l_t = st.selectbox("Activity", ["Oil Change", "Tire Service", "Bulbs", "Battery", "Repair", "Legal"], key=f"t_{active_unit}")
         o_g, o_q, o_c, o_f, pri, tra, a_f, bat, t_s, f_sz, r_sz, l_b, h_b, fog, blk, dom, ins, reg, p_p, nxt = "","","","","","","","","","", "","","","","","","","", "", 0
-        
-        # --- BATTERY CATEGORY (PROFESSIONAL LAYOUT) ---
-        if l_t == "Battery":
+        l_notes = ""
+
+        # --- REPAIR CATEGORY (WORK ORDER LAYOUT) ---
+        if l_t == "Repair":
+            st.write("🔧 **Technical Work Order**")
+            r_c1, r_c2 = st.columns(2)
+            comp = r_c1.text_input("Component", placeholder="e.g. Brakes / Suspension")
+            act = r_c2.text_input("Action Taken", placeholder="e.g. Replaced / Flushed")
+            
+            r_c3, r_c4 = st.columns(2)
+            part_num = r_c3.text_input("Part # / Ref", placeholder="e.g. GM 20911074")
+            cost = r_c4.text_input("Cost ($)", placeholder="e.g. 150.00")
+            
+            l_notes = f"Item: {comp} | Task: {act} | Part: {part_num} | Cost: ${cost}"
+
+        # --- BATTERY CATEGORY ---
+        elif l_t == "Battery":
             st.write("🔋 **Electrical System Specs**")
             b_c1, b_c2 = st.columns(2)
-            b_size = b_c1.text_input("Group Size", placeholder="e.g. H6 / 24 / YTX14L-BS")
+            b_size = b_c1.text_input("Group Size", placeholder="e.g. H6 / YTX14L-BS")
             b_cca = b_c2.text_input("CCA / Amp Hours", placeholder="e.g. 750 / 12Ah")
-            
-            b_c3, b_c4 = st.columns(2)
-            b_volt = b_c3.text_input("Voltage (Static/Running)", placeholder="e.g. 12.6v / 14.2v")
-            b_brand = b_c4.text_input("Brand/Model", placeholder="e.g. Interstate / AGM")
-            
+            b_volt = b_c1.text_input("Voltage Reading", placeholder="e.g. 12.6v / 14.2v")
+            b_brand = b_c2.text_input("Brand", placeholder="e.g. Interstate / AGM")
             bat = f"Size: {b_size} | CCA: {b_cca} | Volts: {b_volt} | Brand: {b_brand}"
 
         # --- BULBS CATEGORY ---
@@ -80,7 +90,6 @@ with c1:
             l_b = l_c1.text_input("Low Beam", key="lb")
             h_b = l_c2.text_input("High Beam", key="hb")
             blk = l_c1.text_input("Blinkers", key="bk")
-            
             if unit_cat != "Motorcycle":
                 fog = l_c2.text_input("Fog Lights", key="fg")
                 dom = l_c1.text_input("Dome Lights", key="dm")
@@ -112,7 +121,11 @@ with c1:
                 o_f = st.text_input("Filter #", key="of")
             nxt = l_km + 8000
 
-        l_notes = st.text_area("General Notes", key=f"n_{active_unit}")
+        # General Add-on Notes for any category
+        extra_notes = st.text_area("Additional Details", key=f"ex_{active_unit}")
+        if l_notes: l_notes += f" | Notes: {extra_notes}"
+        else: l_notes = extra_notes
+        
         gal = st.file_uploader("Upload Image", type=['jpg', 'jpeg', 'png'], key=f"g_{active_unit}")
         
         if st.button("Commit to Log"):
