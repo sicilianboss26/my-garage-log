@@ -135,9 +135,9 @@ with col1:
 
     elif mode == "Legal File":
         st.markdown("### 📄 Legal / Papers")
-        # Removed "Safety" from this list
-        doc_type = st.selectbox("Document Type", ["Insurance", "Registration"])
-        extra_info = st.text_input("Details", placeholder="Renewal date or Policy #")
+        # Added 'License' here
+        doc_type = st.selectbox("Document Type", ["Insurance", "Registration", "License"])
+        extra_info = st.text_input("Details", placeholder="Renewal date or ID #")
         entry["Type"] = f"Legal: {doc_type}"
         entry["Notes"] = f"{doc_type} Update | {extra_info}"
 
