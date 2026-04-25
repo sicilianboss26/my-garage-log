@@ -38,7 +38,8 @@ if not os.path.exists(IMG): os.makedirs(IMG)
 if not os.path.exists(FLEET):
     pd.DataFrame(columns=["Year", "Make", "Model", "Category"]).to_csv(FLEET, index=False)
 
-COLS = ["Date", "Unit", "KM", "Next_KM", "Type", "Ref", "Oil_G", "Oil_Q", "Oil_Cat", "Oil_F", "Primary_Oil", "Trans_Oil", "Air_F", "Batt", "Tire_S", "Front_Size", "Rear_Size", "Low_B", "High_B", "Fog", "Blink", "Dom", "Ins", "Reg", "Photo", "Notes"]
+# Added "Cost" to the permanent columns
+COLS = ["Date", "Unit", "KM", "Next_KM", "Type", "Cost", "Ref", "Oil_G", "Oil_Q", "Oil_Cat", "Oil_F", "Primary_Oil", "Trans_Oil", "Air_F", "Batt", "Tire_S", "Front_Size", "Rear_Size", "Low_B", "High_B", "Fog", "Blink", "Dom", "Ins", "Reg", "Photo", "Notes"]
 if not os.path.exists(LOG):
     pd.DataFrame(columns=COLS).to_csv(LOG, index=False)
 
@@ -91,6 +92,7 @@ with c1:
 
         o_g, o_q, o_c, o_f, pri, tra, a_f, bat, t_s, f_sz, r_sz, l_b, h_b, fog, blk, dom, ins, reg, p_p, nxt = "","","","","","","","","","", "","","","","","","","", "", 0
         l_notes = ""
+        l_cost = 0.0
 
         if l_t == "Tire Service":
             label = "🔧 **Tire Size**" if unit_cat != "Motorcycle" else "🔧 **Front Tire Size**"
@@ -123,9 +125,9 @@ with c1:
             sel_act = st.radio("Action", ["Replace", "Repair", "Service", "Inspect"], horizontal=True)
             parts_data = pd.DataFrame([{"Part": "", "Price": 0.00}])
             edited_parts = st.data_editor(parts_data, num_rows="dynamic", use_container_width=True)
-            total_val = edited_parts["Price"].sum()
-            st.metric("Final Cost", f"${total_val:,.2f}")
-            l_notes = f"System: {sel_comp} | Action: {sel_act} | Total: ${total_val:.2f}"
+            l_cost = edited_parts["Price"].sum()
+            st.metric("Final Cost", f"${l_cost:,.2f}")
+            l_notes = f"System: {sel_comp} | Action: {sel_act}"
 
         elif l_t == "Battery":
             st.write("🔋 **Battery Specs**")
@@ -154,18 +156,20 @@ with c1:
             if gal:
                 p_p = f"{IMG}/{active_unit.replace(' ','_')}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg"
                 Image.open(gal).save(p_p)
-            save_df(pd.concat([get_df(LOG), pd.DataFrame([[datetime.now().strftime("%Y-%m-%d"), active_unit, l_km, nxt, l_t, "", o_g, o_q, o_c, o_f, pri, tra, a_f, bat, t_s, f_sz, r_sz, l_b, h_b, fog, blk, dom, str(ins), str(reg), p_p, l_notes]], columns=COLS)]), LOG); st.rerun()
+            save_df(pd.concat([get_df(LOG), pd.DataFrame([[datetime.now().strftime("%Y-%m-%d"), active_unit, l_km, nxt, l_t, l_cost, "", o_g, o_q, o_c, o_f, pri, tra, a_f, bat, t_s, f_sz, r_sz, l_b, h_b, fog, blk, dom, str(ins), str(reg), p_p, l_notes]], columns=COLS)]), LOG); st.rerun()
 
 with c2:
     st.subheader(f"📊 Service History")
     hist = get_df(LOG)
     if not hist.empty:
         u_h = hist[hist["Unit"] == active_unit].sort_values("Date", ascending=False)
+        
+        # Display cost as a highlighted column in the history view
+        st.dataframe(u_h[["Date", "Type", "Cost", "KM", "Notes"]], use_container_width=True, hide_index=True)
+        
         edit_mode = st.toggle("🔓 Unlock Management Mode")
         if edit_mode:
             edited_df = st.data_editor(u_h, use_container_width=True, hide_index=True, num_rows="dynamic")
             if st.button("💾 Apply All Changes"):
                 save_df(pd.concat([hist[hist["Unit"] != active_unit], edited_df], ignore_index=True), LOG)
                 st.rerun()
-        else:
-            st.dataframe(u_h, use_container_width=True, hide_index=True)
