@@ -87,7 +87,6 @@ with col1:
     mode = st.selectbox("SERVICE CATEGORY", ["Oil Change", "Tires", "Repair", "Bulbs", "Legal File", "Admin: History Manager"])
     km = st.text_input("ODOMETER (KM)")
     
-    # PHOTO UPLOADER (CAMERA/GALLERY)
     uploaded_file = st.file_uploader("📷 Attach Photo or Receipt", type=['png', 'jpg', 'jpeg'])
     photo_name = "None"
     if uploaded_file: photo_name = uploaded_file.name
@@ -102,12 +101,16 @@ with col1:
             unit_rows['Display'] = unit_rows['Date'] + " - " + unit_rows['Type']
             target = st.selectbox("Select Record to Remove", unit_rows.index, format_func=lambda x: unit_rows.loc[x, 'Display'])
             if st.button("🗑️ DELETE PERMANENTLY"):
-                pd.read_csv(LOG).drop(target).to_csv(LOG, index=False); st.success("Deleted"); st.rerun()
+                full_log.drop(target).to_csv(LOG, index=False); st.success("Deleted"); st.rerun()
 
     elif mode == "Oil Change":
         entry["Oil_M"] = st.text_input("Engine Oil Grade")
         if active_cat == "Motorcycle":
-            c1, c2 = st.columns(2); with c1: entry["Oil_P"] = st.text_input("Primary Oil"); with c2: entry["Oil_T"] = st.text_input("Trans Oil")
+            c1, c2 = st.columns(2)
+            with c1: 
+                entry["Oil_P"] = st.text_input("Primary Oil")
+            with c2: 
+                entry["Oil_T"] = st.text_input("Trans Oil")
         entry["Notes"] = st.text_input("Filter/Notes")
         if st.button("SAVE OIL LOG"):
             row = pd.DataFrame([[datetime.now().strftime("%Y-%m-%d"), active_v, mode, km, entry["Notes"], entry["Oil_M"], entry["Oil_P"], entry["Oil_T"], "", "", "", photo_name]], columns=COLS)
@@ -115,8 +118,10 @@ with col1:
 
     elif mode == "Tires":
         c1, c2 = st.columns(2)
-        with c1: entry["F_Tire"] = st.text_input("Front Size / PSI")
-        with c2: entry["R_Tire"] = st.text_input("Rear Size / PSI")
+        with c1: 
+            entry["F_Tire"] = st.text_input("Front Size / PSI")
+        with c2: 
+            entry["R_Tire"] = st.text_input("Rear Size / PSI")
         entry["Notes"] = st.text_input("Torque / Misc")
         if st.button("SAVE TIRE LOG"):
             row = pd.DataFrame([[datetime.now().strftime("%Y-%m-%d"), active_v, mode, km, entry["Notes"], "", "", "", entry["F_Tire"], entry["R_Tire"], "", photo_name]], columns=COLS)
