@@ -64,7 +64,6 @@ with st.sidebar.expander("➕ Add New Vehicle"):
         save_df(pd.concat([get_df(FLEET), pd.DataFrame([{"Year":vy,"Make":vma,"Model":vmo,"Category":vct}])]), FLEET)
         st.rerun()
 
-# Safety Lock Delete
 if active_unit:
     with st.sidebar.expander("🗑️ Delete Selected Vehicle"):
         st.error(f"DANGER: Delete {active_unit}?")
@@ -124,47 +123,7 @@ with c1:
             sel_act = st.radio("Action", ["Replace", "Repair", "Service", "Inspect"], horizontal=True)
             parts_data = pd.DataFrame([{"Part": "", "Price": 0.00}])
             edited_parts = st.data_editor(parts_data, num_rows="dynamic", use_container_width=True)
-            l_notes = f"System: {sel_comp} | Action: {sel_act} | Cost: ${edited_parts['Price'].sum():.2f}"
-
-        elif l_t == "Battery":
-            st.write("🔋 **Battery Specs**")
-            b1, b2 = st.columns(2)
-            bat = f"Size: {b1.text_input('Size')} | CCA: {b2.text_input('CCA')} | V: {b1.text_input('Volts')} | Brand: {b2.text_input('Brand')}"
-
-        elif l_t == "Legal":
-            st.write("📑 **Records**")
-            leg_c1, leg_c2 = st.columns(2)
-            doc_type = leg_c1.selectbox("Doc", ["Registration", "Insurance", "Safety", "Permit"])
-            l_notes = f"Type: {doc_type} | Ref: {leg_c2.text_input('Ref #')} | Exp: {st.date_input('Expiry')}"
-
-        elif l_t == "Bulbs":
-            st.write("💡 **Lighting**")
-            l_c1, l_c2 = st.columns(2)
-            l_b, h_b = l_c1.text_input("Low Beam"), l_c2.text_input("High Beam")
-            blk = l_c1.text_input("Blinkers")
-            if unit_cat != "Motorcycle":
-                fog, dom, reg = l_c2.text_input("Fog"), l_c1.text_input("Dome"), l_c2.text_input("Plate")
-
-        extra_n = st.text_area("Notes", key=f"notes_{active_unit}")
-        l_notes = f"{l_notes} | {extra_n}" if l_notes else extra_n
-        gal = st.file_uploader("Photo/Receipt", type=['jpg', 'jpeg', 'png'], key=f"g_{active_unit}")
-        
-        if st.button("Save Entry"):
-            if gal:
-                p_p = f"{IMG}/{active_unit.replace(' ','_')}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg"
-                Image.open(gal).save(p_p)
-            save_df(pd.concat([get_df(LOG), pd.DataFrame([[datetime.now().strftime("%Y-%m-%d"), active_unit, l_km, nxt, l_t, "", o_g, o_q, o_c, o_f, pri, tra, a_f, bat, t_s, f_sz, r_sz, l_b, h_b, fog, blk, dom, str(ins), str(reg), p_p, l_notes]], columns=COLS)]), LOG); st.rerun()
-
-with c2:
-    st.subheader(f"📊 Service History")
-    hist = get_df(LOG)
-    if not hist.empty:
-        u_h = hist[hist["Unit"] == active_unit].sort_values("Date", ascending=False)
-        edit_mode = st.toggle("🔓 Unlock Management Mode")
-        if edit_mode:
-            edited_df = st.data_editor(u_h, use_container_width=True, hide_index=True, num_rows="dynamic")
-            if st.button("💾 Apply All Changes"):
-                save_df(pd.concat([hist[hist["Unit"] != active_unit], edited_df], ignore_index=True), LOG)
-                st.rerun()
-        else:
-            st.dataframe(u_h, use_container_width=True, hide_index=True)
+            
+            # Restored Final Cost Metric
+            total_val = edited_parts["Price"].sum()
+            st.metric("Final Cost", f"${total_
