@@ -39,7 +39,6 @@ if not os.path.exists(IMG): os.makedirs(IMG)
 if not os.path.exists(FLEET):
     pd.DataFrame(columns=["Year", "Make", "Model", "Category"]).to_csv(FLEET, index=False)
 
-# Fixed COLS to include Cost and ensure it's at the front for visibility
 COLS = ["Date", "Unit", "Type", "Cost", "KM", "Next_KM", "Notes", "Photo", "Oil_G", "Oil_F", "Primary_Oil", "Trans_Oil", "Batt", "F_Tire", "R_Tire", "Low_B", "High_B"]
 if not os.path.exists(LOG):
     pd.DataFrame(columns=COLS).to_csv(LOG, index=False)
@@ -86,15 +85,36 @@ c1, c2 = st.columns([1, 2], gap="large")
 with c1:
     st.subheader(f"⚙️ Working on: {active_unit}")
     with st.container(border=True):
-        l_t = st.selectbox("Activity", ["Repair", "Oil Change", "Tire Service", "Bulbs", "Battery", "Legal"], key=f"t_{active_unit}")
-        l_km = st.number_input("Current KM", min_value=0, step=1, key=f"k_{active_unit}")
+        l_t = st.selectbox("Activity", ["Battery", "Bulbs", "Repair", "Oil Change", "Tire Service", "Legal"], key=f"t_{active_unit}")
         
-        # Internal placeholders
+        # KM logic: Removed from Battery, Bulbs, and Legal
+        l_km = 0
+        if l_t not in ["Battery", "Bulbs", "Legal"]:
+            l_km = st.number_input("Current KM", min_value=0, step=1, key=f"k_{active_unit}")
+        
         o_g, o_f, pri, tra, bat, f_sz, r_sz, l_b, h_b, nxt = "", "", "", "", "", "", "", "", "", 0
         l_cost = 0.0
         l_notes = ""
 
-        if l_t == "Repair":
+        if l_t == "Battery":
+            st.write("🔋 **Battery Specs**")
+            b1, b2 = st.columns(2)
+            brand = b1.text_input("Brand")
+            size = b2.text_input("Group Size")
+            cca = b1.text_input("Cold Cranking Amps (CCA)")
+            l_cost = st.number_input("Battery Cost", min_value=0.0, step=0.01)
+            bat = f"{brand} | Size: {size} | CCA: {cca}"
+            l_notes = "New Battery Installation"
+
+        elif l_t == "Bulbs":
+            st.write("💡 **Bulb Replacement**")
+            b_c1, b_c2 = st.columns(2)
+            l_b = b_c1.text_input("Low Beam Spec")
+            h_b = b_c2.text_input("High Beam Spec")
+            l_cost = st.number_input("Bulb Cost", min_value=0.0, step=0.01)
+            l_notes = "Bulb Upgrade/Replacement"
+
+        elif l_t == "Repair":
             st.write("📋 **Work Details**")
             sel_comp = st.selectbox("System", ["Engine", "Transmission", "Suspension", "Brakes", "Electrical", "Body", "Audio"])
             parts_data = pd.DataFrame([{"Part": "", "Price": 0.00}])
@@ -149,7 +169,6 @@ with c2:
             total_spent = u_h["Cost"].sum()
             st.metric("Total Investment", f"${total_spent:,.2f}")
             
-            # Pricing specific history
             st.dataframe(
                 u_h[["Date", "Type", "Cost", "Notes"]].style.format({"Cost": "${:,.2f}"}),
                 use_container_width=True, 
