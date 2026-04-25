@@ -75,11 +75,12 @@ c1, c2 = st.columns([1, 2], gap="large")
 with c1:
     st.subheader(f"⚙️ Working on: {active_unit}")
     with st.container(border=True):
-        # STREAMLINED ACTIVITIES
-        l_t = st.selectbox("Activity", ["Repair", "Oil Change", "Tire Service", "Battery"], key=f"t_{active_unit}")
+        # ALL CATEGORIES RESTORED
+        l_t = st.selectbox("Activity", ["Repair", "Oil Change", "Tire Service", "Battery", "Bulbs", "Legal"], key=f"t_{active_unit}")
         
+        # KM required for major services only
         l_km = 0
-        if l_t != "Battery":
+        if l_t not in ["Battery", "Bulbs", "Legal"]:
             l_km = st.number_input("Current KM", min_value=0, step=1, key=f"k_{active_unit}")
         
         o_g, o_f, pri, tra, bat, f_sz, r_sz, l_b, h_b, nxt = "", "", "", "", "", "", "", "", "", 0
@@ -110,11 +111,19 @@ with c1:
         elif l_t == "Battery":
             st.write("🔋 **Battery Specs**")
             b1, b2 = st.columns(2)
-            brand = b1.text_input("Brand")
-            size = b2.text_input("Group Size")
-            cca = b1.text_input("CCA")
+            bat = f"{b1.text_input('Brand')} | Size: {b2.text_input('Size')} | CCA: {b1.text_input('CCA')}"
             l_cost = st.number_input("Battery Cost", min_value=0.0, step=0.01)
-            bat = f"{brand} | Size: {size} | CCA: {cca}"
+
+        elif l_t == "Bulbs":
+            st.write("💡 **Lighting**")
+            b_c1, b_c2 = st.columns(2)
+            l_b, h_b = b_c1.text_input("Low Beam Spec"), b_c2.text_input("High Beam Spec")
+            l_cost = st.number_input("Cost", min_value=0.0, step=0.01)
+
+        elif l_t == "Legal":
+            st.write("📑 **Legal/Papers**")
+            doc = st.selectbox("Doc Type", ["Insurance", "Registration", "Safety"])
+            l_notes = f"{doc} Update"
 
         extra_n = st.text_area("Notes", placeholder="Specific details...", key=f"notes_{active_unit}")
         l_notes = f"{l_notes} | {extra_n}" if l_notes else extra_n
@@ -135,10 +144,10 @@ with c2:
     
     hist = get_df(LOG)
     if not hist.empty:
-        # FILTERED HISTORY: Only show the categories you want
-        u_h = hist[(hist["Unit"] == active_unit) & (hist["Type"].isin(["Repair", "Oil Change", "Tire Service", "Battery"]))].sort_values("Date", ascending=False)
+        u_h = hist[hist["Unit"] == active_unit].sort_values("Date", ascending=False)
         
         with tab1:
+            # Full history visible here
             st.dataframe(u_h[["Date", "Type", "KM", "Notes"]], use_container_width=True, hide_index=True)
             if st.toggle("🔓 Edit Entries"):
                 edited_df = st.data_editor(u_h, use_container_width=True, hide_index=True)
@@ -147,12 +156,14 @@ with c2:
                     st.rerun()
 
         with tab2:
-            st.subheader("Financial Breakdown")
-            total_spent = u_h["Cost"].sum()
+            st.subheader("Major Maintenance Costs")
+            # Only track the "Big 4" in the Expense Tracker
+            finance_df = u_h[u_h["Type"].isin(["Repair", "Oil Change", "Tire Service", "Battery"])]
+            total_spent = finance_df["Cost"].sum()
             st.metric("Total Investment", f"${total_spent:,.2f}")
             
             st.dataframe(
-                u_h[["Date", "Type", "Cost", "Notes"]].style.format({"Cost": "${:,.2f}"}),
+                finance_df[["Date", "Type", "Cost", "Notes"]].style.format({"Cost": "${:,.2f}"}),
                 use_container_width=True, 
                 hide_index=True
             )
