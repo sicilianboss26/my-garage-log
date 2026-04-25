@@ -60,26 +60,13 @@ with c1:
         o_g, o_q, o_c, o_f, pri, tra, a_f, bat, t_s, f_sz, r_sz, l_b, h_b, fog, blk, dom, ins, reg, p_p, nxt = "","","","","","","","","","", "","","","","","","","", "", 0
         l_notes = ""
 
-        # --- TIRE SERVICE (RESTORED REAR TIRE) ---
-        if l_t == "Tire Service":
-            st.write("🔧 **Front Tire Size**")
-            t_f1, t_f2, t_f3 = st.columns(3)
-            fw, fa, fr = t_f1.text_input("W"), t_f2.text_input("R"), t_f3.text_input("D")
-            f_sz = f"{fw}/{fa}R{fr}" if fw and fa and fr else ""
-            
-            if unit_cat == "Motorcycle":
-                st.write("🏍️ **Rear Tire Size**")
-                tr1, tr2, tr3 = st.columns(3)
-                rw, ra, rd = tr1.text_input("W "), tr2.text_input("R "), tr3.text_input("D ")
-                r_sz = f"{rw}/{ra}R{rd}" if rw and ra and rd else ""
-
-        # --- OIL CHANGE ---
-        elif l_t == "Oil Change":
+        # --- OIL CHANGE (UPDATED TYPES) ---
+        if l_t == "Oil Change":
             if unit_cat == "Motorcycle":
                 st.markdown("🏍️ **Engine Oil**")
                 m1, m2 = st.columns(2)
                 o_g, o_f = m1.text_input("Grade"), m2.text_input("Filter #")
-                o_c = st.selectbox("Type", ["Synthetic", "V-Twin Blend", "Mineral"])
+                o_c = st.selectbox("Type", ["Full Synthetic", "Synthetic Blend", "V-Twin Blend", "Mineral"])
                 st.markdown("⚙️ **Drivetrain**")
                 m3, m4 = st.columns(2)
                 pri, tra = m3.text_input("Primary Oil"), m4.text_input("Transmission Oil")
@@ -89,6 +76,18 @@ with c1:
                 o_c = o2.selectbox("Type", ["Full Synthetic", "High Mileage", "Conventional"])
                 o_f = st.text_input("Filter #")
             nxt = l_km + 8000
+
+        # --- TIRE SERVICE ---
+        elif l_t == "Tire Service":
+            st.write("🔧 **Front Tire Size**")
+            t_f1, t_f2, t_f3 = st.columns(3)
+            fw, fa, fr = t_f1.text_input("W"), t_f2.text_input("R"), t_f3.text_input("D")
+            f_sz = f"{fw}/{fa}R{fr}" if fw and fa and fr else ""
+            if unit_cat == "Motorcycle":
+                st.write("🏍️ **Rear Tire Size**")
+                tr1, tr2, tr3 = st.columns(3)
+                rw, ra, rd = tr1.text_input("W "), tr2.text_input("R "), tr3.text_input("D ")
+                r_sz = f"{rw}/{ra}R{rd}" if rw and ra and rd else ""
 
         # --- REPAIR ---
         elif l_t == "Repair":
@@ -130,26 +129,4 @@ with c1:
         if l_notes: l_notes += f" | {extra_notes}"
         else: l_notes = extra_notes
         
-        gal = st.file_uploader("Upload Image", type=['jpg', 'jpeg', 'png'], key=f"g_{active_unit}")
-        
-        if st.button("Commit to Log"):
-            if gal:
-                p_p = f"{IMG}/{active_unit.replace(' ','_')}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg"
-                Image.open(gal).save(p_p)
-            save_df(pd.concat([get_df(LOG), pd.DataFrame([[datetime.now().strftime("%Y-%m-%d"), active_unit, l_km, nxt, l_t, "", o_g, o_q, o_c, o_f, pri, tra, a_f, bat, t_s, f_sz, r_sz, l_b, h_b, fog, blk, dom, str(ins), str(reg), p_p, l_notes]], columns=COLS)]), LOG); st.rerun()
-
-with c2:
-    st.subheader(f"📊 History")
-    hist = get_df(LOG)
-    if not hist.empty:
-        u_h = hist[hist["Unit"] == active_unit].sort_values("Date", ascending=False)
-        edit_mode = st.toggle("🔓 Unlock Edit Mode")
-        if edit_mode:
-            edited_df = st.data_editor(u_h, use_container_width=True, hide_index=True, num_rows="dynamic")
-            if st.button("💾 Save History Changes"):
-                other_vehicles = hist[hist["Unit"] != active_unit]
-                final_df = pd.concat([other_vehicles, edited_df], ignore_index=True)
-                save_df(final_df, LOG)
-                st.rerun()
-        else:
-            st.dataframe(u_h, use_container_width=True, hide_index=True)
+        gal = st.file_uploader("Upload Image
