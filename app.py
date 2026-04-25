@@ -60,70 +60,81 @@ with c1:
         o_g, o_q, o_c, o_f, pri, tra, a_f, bat, t_s, f_sz, r_sz, l_b, h_b, fog, blk, dom, ins, reg, p_p, nxt = "","","","","","","","","","", "","","","","","","","", "", 0
         l_notes = ""
 
-        # --- REPAIR CATEGORY (WORK ORDER LAYOUT) ---
+        # --- REPAIR CATEGORY (ADVANCED WORK ORDER) ---
         if l_t == "Repair":
-            st.write("🔧 **Technical Work Order**")
-            r_c1, r_c2 = st.columns(2)
-            comp = r_c1.text_input("Component", placeholder="e.g. Brakes / Suspension")
-            act = r_c2.text_input("Action Taken", placeholder="e.g. Replaced / Flushed")
+            st.write("📋 **Service Work Order**")
             
-            r_c3, r_c4 = st.columns(2)
-            part_num = r_c3.text_input("Part # / Ref", placeholder="e.g. GM 20911074")
-            cost = r_c4.text_input("Cost ($)", placeholder="e.g. 150.00")
+            # System selection
+            comp_list = ["Engine", "Transmission", "Drivetrain", "Suspension", "Brakes", "Steering", "Cooling System", "Exhaust", "Fuel System", "Electrical", "Body/Exterior", "Audio/Interior"]
+            sel_comp = st.selectbox("System / Component", comp_list)
             
-            l_notes = f"Item: {comp} | Task: {act} | Part: {part_num} | Cost: ${cost}"
+            # Action type
+            sel_act = st.segmented_control("Action", ["Replace", "Repair", "Flush/Service", "Inspect", "Upgrade"])
+            
+            # Parts Inventory Table
+            st.write("📦 **Parts & Materials**")
+            parts_data = pd.DataFrame([{"Part Name": "", "Part #": "", "Qty": 1, "Price ($)": 0.00}])
+            edited_parts = st.data_editor(parts_data, num_rows="dynamic", use_container_width=True, key="repair_table")
+            
+            # Calculate Total
+            try:
+                total_cost = (edited_parts["Qty"] * edited_parts["Price ($)"]).sum()
+                st.metric("Estimated Total Parts Cost", f"${total_cost:,.2f}")
+                
+                # Format parts list for notes
+                parts_summary = "; ".join([f"{r['Qty']}x {r['Part Name']} ({r['Part #']})" for _, r in edited_parts.iterrows() if r['Part Name']])
+                l_notes = f"System: {sel_comp} | Action: {sel_act} | Total: ${total_cost:.2f} | Parts: {parts_summary}"
+            except:
+                st.error("Check price/qty format")
 
         # --- BATTERY CATEGORY ---
         elif l_t == "Battery":
             st.write("🔋 **Electrical System Specs**")
             b_c1, b_c2 = st.columns(2)
-            b_size = b_c1.text_input("Group Size", placeholder="e.g. H6 / YTX14L-BS")
-            b_cca = b_c2.text_input("CCA / Amp Hours", placeholder="e.g. 750 / 12Ah")
-            b_volt = b_c1.text_input("Voltage Reading", placeholder="e.g. 12.6v / 14.2v")
-            b_brand = b_c2.text_input("Brand", placeholder="e.g. Interstate / AGM")
+            b_size = b_c1.text_input("Group Size")
+            b_cca = b_c2.text_input("CCA / Amp Hours")
+            b_volt = b_c1.text_input("Voltage (Static/Running)")
+            b_brand = b_c2.text_input("Brand/Model")
             bat = f"Size: {b_size} | CCA: {b_cca} | Volts: {b_volt} | Brand: {b_brand}"
 
         # --- BULBS CATEGORY ---
         elif l_t == "Bulbs":
             st.write("💡 **Lighting Maintenance**")
             l_c1, l_c2 = st.columns(2)
-            l_b = l_c1.text_input("Low Beam", key="lb")
-            h_b = l_c2.text_input("High Beam", key="hb")
-            blk = l_c1.text_input("Blinkers", key="bk")
+            l_b, h_b = l_c1.text_input("Low Beam"), l_c2.text_input("High Beam")
+            blk = l_c1.text_input("Blinkers")
             if unit_cat != "Motorcycle":
-                fog = l_c2.text_input("Fog Lights", key="fg")
-                dom = l_c1.text_input("Dome Lights", key="dm")
-                reg = l_c2.text_input("License Plate Lights", key="reg_l")
+                fog, dom, reg = l_c2.text_input("Fog"), l_c1.text_input("Dome"), l_c2.text_input("License Plate")
 
         # --- TIRE SERVICE ---
         elif l_t == "Tire Service":
             st.write("🔧 **Front Tire Size**")
             t_f1, t_f2, t_f3 = st.columns(3)
-            fw, fa, fr = t_f1.text_input("W", key="fw"), t_f2.text_input("R", key="fa"), t_f3.text_input("D", key="fr")
+            fw, fa, fr = t_f1.text_input("W"), t_f2.text_input("R"), t_f3.text_input("D")
             f_sz = f"{fw}/{fa}R{fr}" if fw and fa and fr else ""
             if unit_cat == "Motorcycle":
                 st.write("🏍️ **Rear Tire Size**")
                 t_r1, t_r2, t_r3 = st.columns(3)
-                rw, ra, rr = t_r1.text_input("W ", key="rw"), t_r2.text_input("R ", key="ra"), t_r3.text_input("D ", key="rr")
+                rw, ra, rr = t_r1.text_input("W "), t_r2.text_input("R "), t_r3.text_input("D ")
                 r_sz = f"{rw}/{ra}R{rr}" if rw and ra and rr else ""
 
         # --- OIL CHANGE ---
         elif l_t == "Oil Change":
             if unit_cat == "Motorcycle":
                 st.markdown("**Engine**"); m1, m2 = st.columns(2)
-                o_g, o_f = m1.text_input("Grade", key="og"), m2.text_input("Filter #", key="of")
-                o_c = st.selectbox("Type", ["Mineral", "V-Twin", "Synthetic"], key="oc")
+                o_g, o_f = m1.text_input("Grade"), m2.text_input("Filter #")
+                o_c = st.selectbox("Type", ["Mineral", "V-Twin", "Synthetic"])
                 st.markdown("**Drivetrain**"); m3, m4 = st.columns(2)
-                pri, tra = m3.text_input("Primary Oil", key="pri"), m4.text_input("Trans Oil", key="tra")
+                pri, tra = m3.text_input("Primary Oil"), m4.text_input("Trans Oil")
             else:
                 o1, o2 = st.columns(2)
-                o_g, o_c = o1.text_input("Grade", key="og"), o2.selectbox("Type", ["Full Synthetic", "High Mileage", "Conventional"], key="oc")
-                o_f = st.text_input("Filter #", key="of")
+                o_g, o_c = o1.text_input("Grade"), o2.selectbox("Type", ["Full Synthetic", "High Mileage", "Conventional"])
+                o_f = st.text_input("Filter #")
             nxt = l_km + 8000
 
-        # General Add-on Notes for any category
-        extra_notes = st.text_area("Additional Details", key=f"ex_{active_unit}")
-        if l_notes: l_notes += f" | Notes: {extra_notes}"
+        # General Add-on Notes
+        extra_notes = st.text_area("Final Observations", key=f"ex_{active_unit}")
+        if l_notes: l_notes += f" | Obs: {extra_notes}"
         else: l_notes = extra_notes
         
         gal = st.file_uploader("Upload Image", type=['jpg', 'jpeg', 'png'], key=f"g_{active_unit}")
