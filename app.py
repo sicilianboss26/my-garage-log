@@ -6,7 +6,6 @@ import os
 # --- 1. INTERFACE STYLING ---
 st.set_page_config(page_title="Garage Hub Pro", page_icon="🔧", layout="wide")
 
-# Fixed the missing parenthesis from your error photo here
 st.markdown("""
     <style>
     .main { background-color: #0e1117; }
@@ -50,7 +49,6 @@ if not st.session_state.auth:
 
 # --- 3. DATABASE ---
 LOG, FLEET = "maintenance_log.csv", "fleet_database.csv"
-# Fixed the trailing comma/quote error from your photo
 COLS = ["Date", "Vehicle", "Type", "KM", "Notes", "Oil_M", "Oil_P", "Oil_T", "F_Tire", "R_Tire", "Bulbs", "Photo"]
 
 if not os.path.exists(LOG):
@@ -97,8 +95,10 @@ col1, col2 = st.columns([1.3, 2], gap="large")
 
 with col1:
     mode = st.selectbox("CATEGORY", ["Oil Change", "Tires", "Repair", "Diagnostic", "Bulbs", "Legal File"])
+    
+    # Odometer is hidden for Bulbs and Legal File
     km = ""
-    if mode != "Legal File":
+    if mode not in ["Bulbs", "Legal File"]:
         km = st.text_input("ODOMETER (KM)")
         
     uploaded_file = st.file_uploader("📷 Attach Photo", type=['png', 'jpg', 'jpeg'])
@@ -156,7 +156,8 @@ with col1:
 
     elif mode == "Bulbs":
         st.markdown("### 💡 Lighting")
-        b_l = st.selectbox("Location", ["Low/High Beam", "Fog Lights", "Turn/Marker", "License Plate", "Tail/Brake", "Reverse", "Interior", "Side Marker", "Custom"])
+        # Fixed the list to match your layout perfectly
+        b_l = st.selectbox("Location", ["Low/High Beam", "Fog Lights", "Turn/Marker", "License Plate", "Tail/Brake", "Reverse", "Interior", "Side Marker/Custom"])
         entry["Type"] = f"Lighting: {b_l}"
         entry["Bulbs"] = st.text_input("Bulb Spec")
         entry["Notes"] = st.text_area("Replacement Notes")
@@ -167,16 +168,12 @@ with col1:
         d_col1, d_col2 = st.columns(2)
         
         if doc_type == "License":
-            with d_col1:
-                pay_d = st.date_input("Renewal/Payment Date")
-            with d_col2:
-                exp_d = st.date_input("Expiry Date")
+            with d_col1: pay_d = st.date_input("Renewal/Payment Date")
+            with d_col2: exp_d = st.date_input("Expiry Date")
             entry["Notes"] = f"Renewed: {pay_d} | Expires: {exp_d}"
         else:
-            with d_col1:
-                from_d = st.date_input("From Date")
-            with d_col2:
-                to_d = st.date_input("To Date")
+            with d_col1: from_d = st.date_input("From Date")
+            with d_col2: to_d = st.date_input("To Date")
             entry["Notes"] = f"Period: {from_d} to {to_d}"
             
         entry["Type"] = f"Legal: {doc_type}"
