@@ -62,7 +62,7 @@ if not st.session_state.authenticated:
         st.markdown('<div class="login-card">', unsafe_allow_html=True)
         st.markdown('<div class="shop-title">Antonino\'s</div>', unsafe_allow_html=True)
         st.markdown('<div class="shop-title" style="font-size: 36px;">Garage Hub</div>', unsafe_allow_html=True)
-        st.markdown('<div class="shop-subtitle">SECURE SYSTEM ENTRY | V3.4</div>', unsafe_allow_html=True)
+        st.markdown('<div class="shop-subtitle">SECURE SYSTEM ENTRY | V3.6</div>', unsafe_allow_html=True)
         
         input_pin = st.text_input("Enter Shop PIN", type="password", placeholder="****")
         
@@ -75,7 +75,7 @@ if not st.session_state.authenticated:
         st.markdown('</div>', unsafe_allow_html=True)
     st.stop()
 
-# --- 3. DATA & DIRECTORIES ---
+# --- 3. DATA PERSISTENCE ---
 LOG, FLEET = "maintenance_log.csv", "fleet_database.csv"
 COLS = ["Date", "Unit", "Type", "Cost", "KM", "Next_KM", "Notes", "Photo", "Oil_G", "Oil_F", "Primary_Oil", "Trans_Oil", "Batt", "F_Tire", "R_Tire", "Low_B", "High_B"]
 
@@ -105,12 +105,10 @@ with st.sidebar:
                 st.success(f"Removed {to_remove}")
                 st.rerun()
 
-    # ADD NEW VEHICLE (Moved inside sidebar for stability)
     with st.expander("➕ Add New Vehicle"):
         vy = st.selectbox("Year", range(2027, 1980, -1))
         vma = st.text_input("Make")
         vmo = st.text_input("Model")
-        # Added E-Bike category
         vct = st.radio("Category", ["Car/SUV", "Truck", "Motorcycle", "E-Bike"]) 
         if st.button("Save Vehicle"):
             if vma and vmo:
@@ -118,7 +116,7 @@ with st.sidebar:
                 pd.concat([pd.read_csv(FLEET), new_v]).to_csv(FLEET, index=False)
                 st.rerun()
 
-# --- 5. DASHBOARD ---
+# --- 5. MAIN DASHBOARD ---
 st.title("🛠️ The Garage Hub")
 if not active_unit:
     st.info("👈 Use the sidebar to add a vehicle and begin."); st.stop()
@@ -128,23 +126,44 @@ c1, c2 = st.columns([1, 2], gap="large")
 with c1:
     st.subheader(f"⚙️ Active: {active_unit}")
     with st.container(border=True):
-        # Expanded Activity List
+        # Updated Activity List: Renamed 3D and Moved Audio into repair context
         l_t = st.selectbox("Activity", [
-            "Oil Change", "Repair", "Diagnostic", 
-            "Audio/Electrical", "Battery Service", 
-            "Tire Service", "3D Printed Part", "Legal"
+            "Repair (Mechanical/Audio)", 
+            "Oil Change", 
+            "Diagnostic", 
+            "Battery Service", 
+            "Tire Service", 
+            "3D Printed Part", 
+            "Legal"
         ])
         
+        entry_details = {} # Store technical info here
+        
         if l_t == "Legal":
-            doc = st.selectbox("Doc Type", ["Insurance", "Registration", "License"]) # License included
-            notes = st.text_area("Notes")
+            entry_details['doc'] = st.selectbox("Doc Type", ["Insurance", "Registration", "License"])
+            entry_details['notes'] = st.text_area("Notes")
+        elif l_t == "3D Printed Part":
+            entry_details['part'] = st.text_input("Part Name")
+            entry_details['material'] = st.selectbox("Material", ["ASA", "Carbon Fiber", "PETG", "PLA"])
+            entry_details['notes'] = st.text_area("Notes")
         else:
-            notes = st.text_area("Notes")
+            # Main Repair/Diagnostic view
+            entry_details['notes'] = st.text_area("Work Performed (Repairs, Wiring, Audio Settings)")
 
         if st.button("💾 Save Entry"):
-            new_row = pd.DataFrame([[datetime.now().strftime("%Y-%m-%d"), active_unit, l_t, 0, 0, 0, notes, "", "", "", "", "", "", "", "", "", ""]], columns=COLS)
+            # Combine details into the notes field for the CSV
+            final_note = f"{entry_details.get('part', '')} ({entry_details.get('material', '')}) {entry_details.get('notes', '')}".strip()
+            
+            new_row = pd.DataFrame([[
+                datetime.now().strftime("%Y-%m-%d"), 
+                active_unit, 
+                l_t, 0, 0, 0, 
+                final_note, 
+                "", "", "", "", "", "", "", "", "", ""
+            ]], columns=COLS)
+            
             pd.concat([pd.read_csv(LOG), new_row]).to_csv(LOG, index=False)
-            st.success("Entry Logged!")
+            st.success("Log Saved to Garage Records!")
             st.rerun()
 
 with c2:
