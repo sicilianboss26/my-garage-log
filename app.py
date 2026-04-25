@@ -96,7 +96,7 @@ col1, col2 = st.columns([1.3, 2], gap="large")
 with col1:
     mode = st.selectbox("CATEGORY", ["Oil Change", "Tires", "Repair", "Diagnostic", "Bulbs", "Legal File"])
     
-    # Odometer is hidden for Bulbs and Legal File
+    # KM is kept for Diagnostic, but hidden for Bulbs and Legal File
     km = ""
     if mode not in ["Bulbs", "Legal File"]:
         km = st.text_input("ODOMETER (KM)")
@@ -126,73 +126,4 @@ with col1:
             o_liters = st.text_input("Liters")
             o_filter = st.text_input("Filter #")
             entry["Oil_M"] = f"{o_grade} ({o_type})"
-            entry["Notes"] = f"{o_liters}L | Filter: {o_filter} | {st.text_area('Notes')}"
-
-    elif mode == "Tires":
-        st.markdown("### Tires & PSI")
-        ft1, ft2 = st.columns([2, 1])
-        f_s = ft1.text_input("Front Size")
-        f_p = ft2.text_input("Front PSI")
-        rt1, rt2 = st.columns([2, 1])
-        r_s = rt1.text_input("Rear Size")
-        r_p = rt2.text_input("Rear PSI")
-        entry["F_Tire"] = f"{f_s} ({f_p} PSI)"
-        entry["R_Tire"] = f"{r_s} ({r_p} PSI)"
-        entry["Notes"] = st.text_area("Service Notes")
-
-    elif mode == "Repair":
-        rep_cat = st.selectbox("System", ["Engine", "Transmission", "Electrical", "Audio", "Suspension", "Brakes", "Exhaust", "Body"])
-        entry["Type"] = f"Repair: {rep_cat}"
-        entry["Notes"] = st.text_area("Work Details")
-
-    elif mode == "Diagnostic":
-        st.markdown("### ⚡ Diagnostic Scan")
-        d1, d2 = st.columns(2)
-        dtc = d1.text_input("DTC")
-        abs_c = d1.text_input("ABS")
-        srs = d2.text_input("SRS")
-        oth = d2.text_input("Body")
-        entry["Notes"] = f"DTC:{dtc} | SRS:{srs} | ABS:{abs_c} | Body:{oth} | {st.text_area('Live Data')}"
-
-    elif mode == "Bulbs":
-        st.markdown("### 💡 Lighting")
-        # Fixed the list to match your layout perfectly
-        b_l = st.selectbox("Location", ["Low/High Beam", "Fog Lights", "Turn/Marker", "License Plate", "Tail/Brake", "Reverse", "Interior", "Side Marker/Custom"])
-        entry["Type"] = f"Lighting: {b_l}"
-        entry["Bulbs"] = st.text_input("Bulb Spec")
-        entry["Notes"] = st.text_area("Replacement Notes")
-
-    elif mode == "Legal File":
-        st.markdown("### 📄 Legal / Papers")
-        doc_type = st.selectbox("Document Type", ["Insurance", "Registration", "License"])
-        d_col1, d_col2 = st.columns(2)
-        
-        if doc_type == "License":
-            with d_col1: pay_d = st.date_input("Renewal/Payment Date")
-            with d_col2: exp_d = st.date_input("Expiry Date")
-            entry["Notes"] = f"Renewed: {pay_d} | Expires: {exp_d}"
-        else:
-            with d_col1: from_d = st.date_input("From Date")
-            with d_col2: to_d = st.date_input("To Date")
-            entry["Notes"] = f"Period: {from_d} to {to_d}"
-            
-        entry["Type"] = f"Legal: {doc_type}"
-
-    if st.button("💾 SAVE RECORD"):
-        pd.concat([pd.read_csv(LOG), pd.DataFrame([entry])], ignore_index=True).to_csv(LOG, index=False)
-        st.rerun()
-
-with col2:
-    st.subheader("📋 HISTORY")
-    h_df = pd.read_csv(LOG)
-    if not h_df.empty:
-        v_h = h_df[h_df["Vehicle"] == active_v].sort_values(by="Date", ascending=False)
-        st.dataframe(v_h, use_container_width=True, hide_index=True)
-        st.divider()
-        with st.expander("📝 Edit History"):
-            if not v_h.empty:
-                v_h['Display'] = v_h['Date'] + " - " + v_h['Type']
-                sel = st.selectbox("Select record", v_h.index, format_func=lambda x: v_h.loc[x, 'Display'])
-                if st.button("PURGE RECORD"):
-                    h_df.drop(sel).to_csv(LOG, index=False)
-                    st.rerun()
+            entry["Notes"] = f"{o_liters}L | Filter: {o_
