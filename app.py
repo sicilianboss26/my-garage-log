@@ -53,47 +53,44 @@ with c1:
     with st.container(border=True):
         l_t = st.selectbox("Activity", ["Oil Change", "Tire Service", "Bulbs", "Battery", "Repair", "Legal"], key=f"t_{active_unit}")
         
-        # KM is disabled for Legal
+        # KM logic
         l_km = 0
         if l_t != "Legal":
             l_km = st.number_input("Current KM", min_value=0, step=1, key=f"k_{active_unit}")
         else:
-            st.caption("📂 Mileage tracking disabled for Administrative/Legal logs.")
+            st.info("📂 Administrative Log: Mileage not required.")
 
         o_g, o_q, o_c, o_f, pri, tra, a_f, bat, t_s, f_sz, r_sz, l_b, h_b, fog, blk, dom, ins, reg, p_p, nxt = "","","","","","","","","","", "","","","","","","","", "", 0
         l_notes = ""
 
-        # --- LEGAL CATEGORY (NEW COMPLIANCE HUB) ---
+        # --- LEGAL CATEGORY (STREAMLINED) ---
         if l_t == "Legal":
-            st.write("📑 **Compliance & Documents**")
+            st.write("📑 **Compliance Tracking**")
             leg_c1, leg_c2 = st.columns(2)
-            doc_type = leg_c1.selectbox("Document Type", ["Registration", "Insurance", "Safety Inspection", "Permit", "Ownership Transfer"])
-            ref_num = leg_c2.text_input("Policy / Reference #")
-            
+            doc_type = leg_c1.selectbox("Document", ["Registration", "Insurance", "Safety Inspection", "Permit"])
+            ref_num = leg_c2.text_input("Reference / Policy #")
             exp_date = st.date_input("Expiry Date")
-            l_notes = f"Doc: {doc_type} | Ref: {ref_num} | Expires: {exp_date}"
+            l_notes = f"Type: {doc_type} | Ref: {ref_num} | Expires: {exp_date}"
 
-        # --- REPAIR CATEGORY ---
+        # --- REPAIR ---
         elif l_t == "Repair":
-            st.write("📋 **Service Work Order**")
-            comp_list = ["Engine", "Transmission", "Drivetrain", "Suspension", "Brakes", "Steering", "Cooling System", "Exhaust", "Fuel System", "Electrical", "Body/Exterior", "Audio/Interior"]
-            sel_comp = st.selectbox("System / Component", comp_list)
-            sel_act = st.segmented_control("Action", ["Replace", "Repair", "Flush/Service", "Inspect", "Upgrade"])
-            
-            st.write("📦 **Parts & Materials**")
-            parts_data = pd.DataFrame([{"Part Name": "", "Part #": "", "Qty": 1, "Price ($)": 0.00}])
-            edited_parts = st.data_editor(parts_data, num_rows="dynamic", use_container_width=True, key="repair_table")
-            
-            total_cost = (edited_parts["Qty"] * edited_parts["Price ($)"]).sum()
-            st.metric("Total Parts", f"${total_cost:,.2f}")
-            parts_summary = "; ".join([f"{r['Qty']}x {r['Part Name']}" for _, r in edited_parts.iterrows() if r['Part Name']])
+            st.write("📋 **Work Order**")
+            comp_list = ["Engine", "Transmission", "Drivetrain", "Suspension", "Brakes", "Steering", "Cooling", "Exhaust", "Fuel", "Electrical", "Body", "Audio/Interior"]
+            sel_comp = st.selectbox("System", comp_list)
+            sel_act = st.segmented_control("Action", ["Replace", "Repair", "Service", "Inspect", "Upgrade"])
+            st.write("📦 **Parts**")
+            parts_data = pd.DataFrame([{"Part": "", "Part #": "", "Qty": 1, "Price": 0.00}])
+            edited_parts = st.data_editor(parts_data, num_rows="dynamic", use_container_width=True)
+            total_cost = (edited_parts["Qty"] * edited_parts["Price"]).sum()
+            st.metric("Total Cost", f"${total_cost:,.2f}")
+            parts_summary = "; ".join([f"{r['Part']}" for _, r in edited_parts.iterrows() if r['Part']])
             l_notes = f"System: {sel_comp} | Action: {sel_act} | Total: ${total_cost:.2f} | Parts: {parts_summary}"
 
         # --- BATTERY ---
         elif l_t == "Battery":
-            st.write("🔋 **Electrical Specs**")
-            b_c1, b_c2 = st.columns(2)
-            bat = f"Size: {b_c1.text_input('Size')} | CCA: {b_c2.text_input('CCA')} | Volts: {b_c1.text_input('Volts')} | Brand: {b_c2.text_input('Brand')}"
+            st.write("🔋 **Electrical**")
+            b1, b2 = st.columns(2)
+            bat = f"Size: {b1.text_input('Size')} | CCA: {b2.text_input('CCA')} | Volts: {b1.text_input('Volts')} | Brand: {b2.text_input('Brand')}"
 
         # --- BULBS ---
         elif l_t == "Bulbs":
@@ -130,11 +127,14 @@ with c1:
                 o_f = st.text_input("Filter #")
             nxt = l_km + 8000
 
-        extra_notes = st.text_area("Final Observations", key=f"ex_{active_unit}")
-        if l_notes: l_notes += f" | Obs: {extra_notes}"
-        else: l_notes = extra_notes
+        # Optional detail for Repairs/Tires/Oil etc. 
+        # (Self-hiding for Legal unless you want to keep a generic notes box)
+        if l_t != "Legal":
+            extra_notes = st.text_area("Final Observations", key=f"ex_{active_unit}")
+            if l_notes: l_notes += f" | Obs: {extra_notes}"
+            else: l_notes = extra_notes
         
-        gal = st.file_uploader("Upload Document/Image", type=['jpg', 'jpeg', 'png'], key=f"g_{active_unit}")
+        gal = st.file_uploader("Upload Image/Doc", type=['jpg', 'jpeg', 'png'], key=f"g_{active_unit}")
         
         if st.button("Commit to Log"):
             if gal:
