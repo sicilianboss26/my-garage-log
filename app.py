@@ -53,20 +53,30 @@ with c1:
     with st.container(border=True):
         l_t = st.selectbox("Activity", ["Oil Change", "Tire Service", "Bulbs", "Battery", "Repair", "Legal"], key=f"t_{active_unit}")
         
-        # KM logic - purely functional, no extra messages
+        # KM logic - Disabled for Battery and Legal
         l_km = 0
-        if l_t != "Legal":
+        if l_t not in ["Battery", "Legal"]:
             l_km = st.number_input("Current KM", min_value=0, step=1, key=f"k_{active_unit}")
 
         o_g, o_q, o_c, o_f, pri, tra, a_f, bat, t_s, f_sz, r_sz, l_b, h_b, fog, blk, dom, ins, reg, p_p, nxt = "","","","","","","","","","", "","","","","","","","", "", 0
         l_notes = ""
 
-        # --- LEGAL CATEGORY ---
-        if l_t == "Legal":
+        # --- BATTERY (NO KM) ---
+        if l_t == "Battery":
+            st.write("🔋 **Electrical Specs**")
+            b1, b2 = st.columns(2)
+            b_size = b1.text_input('Size')
+            b_cca = b2.text_input('CCA')
+            b_v = b1.text_input('Volts')
+            b_br = b2.text_input('Brand')
+            bat = f"Size: {b_size} | CCA: {b_cca} | Volts: {b_v} | Brand: {b_br}"
+
+        # --- LEGAL (NO KM) ---
+        elif l_t == "Legal":
             st.write("📑 **Compliance Tracking**")
             leg_c1, leg_c2 = st.columns(2)
             doc_type = leg_c1.selectbox("Document", ["Registration", "Insurance", "Safety Inspection", "Permit"])
-            ref_num = leg_c2.text_input("Reference / Policy #")
+            ref_num = leg_c2.text_input("Reference #")
             exp_date = st.date_input("Expiry Date")
             l_notes = f"Type: {doc_type} | Ref: {ref_num} | Expires: {exp_date}"
 
@@ -83,12 +93,6 @@ with c1:
             st.metric("Total Cost", f"${total_cost:,.2f}")
             parts_summary = "; ".join([f"{r['Part']}" for _, r in edited_parts.iterrows() if r['Part']])
             l_notes = f"System: {sel_comp} | Action: {sel_act} | Total: ${total_cost:.2f} | Parts: {parts_summary}"
-
-        # --- BATTERY ---
-        elif l_t == "Battery":
-            st.write("🔋 **Electrical**")
-            b1, b2 = st.columns(2)
-            bat = f"Size: {b1.text_input('Size')} | CCA: {b2.text_input('CCA')} | Volts: {b1.text_input('Volts')} | Brand: {b2.text_input('Brand')}"
 
         # --- BULBS ---
         elif l_t == "Bulbs":
@@ -125,11 +129,10 @@ with c1:
                 o_f = st.text_input("Filter #")
             nxt = l_km + 8000
 
-        # Generic observations box for all non-Legal categories
-        if l_t != "Legal":
-            extra_notes = st.text_area("Final Observations", key=f"ex_{active_unit}")
-            if l_notes: l_notes += f" | Obs: {extra_notes}"
-            else: l_notes = extra_notes
+        # Uniform Notes box for all categories
+        extra_notes = st.text_area("Notes", key=f"notes_{active_unit}")
+        if l_notes: l_notes += f" | {extra_notes}"
+        else: l_notes = extra_notes
         
         gal = st.file_uploader("Upload Image/Doc", type=['jpg', 'jpeg', 'png'], key=f"g_{active_unit}")
         
