@@ -3,7 +3,7 @@ import pandas as pd
 from datetime import datetime
 import os
 
-# --- 1. PRO-GRADE INTERFACE STYLING ---
+# --- 1. INTERFACE STYLING ---
 st.set_page_config(page_title="Garage Hub Pro", page_icon="🔧", layout="wide")
 
 st.markdown("""
@@ -16,7 +16,8 @@ st.markdown("""
     }
     .shop-title { color: #ff4b4b; font-size: 32px; font-weight: 900; text-transform: uppercase; letter-spacing: 3px; }
     h1, h2, h3 { color: #ff4b4b !important; font-family: 'Segoe UI', sans-serif; text-transform: uppercase; }
-    .stTextInput>div>div>input, .stTextArea>div>div>textarea { 
+    .working-on { color: #00ff00; font-family: 'Courier New', monospace; font-size: 20px; font-weight: bold; margin-bottom: 20px; }
+    .stTextInput>div>div>input, .stTextArea>div>div>textarea, .stSelectbox>div>div>div { 
         background-color: #1c1f26 !important; color: #00ff00 !important; font-family: 'Courier New', monospace; border: 1px solid #444; 
     }
     .stButton>button { 
@@ -28,30 +29,30 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# --- 2. AUTHENTICATION ---
+# --- 2. LOG IN ---
 if 'auth' not in st.session_state: st.session_state.auth = False
 if not st.session_state.auth:
     _, center, _ = st.columns([1, 1.5, 1])
     with center:
         st.markdown('<div class="login-card">', unsafe_allow_html=True)
-        st.markdown('<div class="shop-title">Terminal Access</div>', unsafe_allow_html=True)
-        pin = st.text_input("Enter Tech PIN", type="password")
-        if st.button("Initialize System"):
+        st.markdown('<div class="shop-title">Garage Hub</div>', unsafe_allow_html=True)
+        pin = st.text_input("Enter PIN", type="password")
+        if st.button("Log In"):
             if pin == "1234": st.session_state.auth = True; st.rerun()
-            else: st.error("Unauthorized Access")
+            else: st.error("Access Denied")
     st.stop()
 
-# --- 3. DATABASE CORE ---
+# --- 3. DATABASE ---
 LOG, FLEET = "maintenance_log.csv", "fleet_database.csv"
 COLS = ["Date", "Unit", "Type", "KM", "Notes", "Oil_M", "Oil_P", "Oil_T", "F_Tire", "R_Tire", "Bulbs", "Photo"]
 
 if not os.path.exists(LOG): pd.DataFrame(columns=COLS).to_csv(LOG, index=False)
 if not os.path.exists(FLEET): pd.DataFrame(columns=["Year", "Make", "Model", "Cat"]).to_csv(FLEET, index=False)
 
-# --- 4. FLEET CONTROL (SIDEBAR) ---
+# --- 4. VEHICLE MANAGEMENT (SIDEBAR) ---
 with st.sidebar:
-    st.markdown("### 🛠️ SYSTEM CONTROL")
-    if st.button("🔒 LOCK TERMINAL"): st.session_state.auth = False; st.rerun()
+    st.markdown("### 🛠️ CONTROL")
+    if st.button("Log Out"): st.session_state.auth = False; st.rerun()
     st.divider()
     
     f_df = pd.read_csv(FLEET)
@@ -59,96 +60,87 @@ with st.sidebar:
     
     if not f_df.empty:
         f_df["Name"] = f_df["Year"].astype(str) + " " + f_df["Make"] + " " + f_df["Model"]
-        active_v = st.selectbox("ACTIVE UNIT", f_df["Name"].tolist())
+        active_v = st.selectbox("SELECT VEHICLE", f_df["Name"].tolist())
         active_cat = f_df[f_df["Name"] == active_v]["Cat"].values[0]
 
-        with st.expander("🗑️ DECOMMISSION UNIT"):
-            if st.button("CONFIRM DELETE VEHICLE"):
-                updated_fleet = f_df[f_df["Name"] != active_v][["Year", "Make", "Model", "Cat"]]
-                updated_fleet.to_csv(FLEET, index=False); st.rerun()
+        with st.expander("Delete Vehicle"):
+            st.warning(f"Removing {active_v} will not delete its history.")
+            if st.button("Confirm Delete"):
+                # Filters the vehicle list and saves
+                new_f = f_df[f_df["Name"] != active_v][["Year", "Make", "Model", "Cat"]]
+                new_f.to_csv(FLEET, index=False)
+                st.rerun()
 
-    with st.expander("➕ ADD TO FLEET"):
-        y = st.selectbox("YEAR", range(2027, 1990, -1))
-        ma, mo = st.text_input("MAKE"), st.text_input("MODEL")
-        ct = st.radio("CATEGORY", ["Car/SUV", "Truck", "Motorcycle"])
-        if st.button("REGISTER VEHICLE"):
-            new_row = pd.DataFrame([{"Year": y, "Make": ma, "Model": mo, "Cat": ct}])
-            pd.concat([pd.read_csv(FLEET), new_row]).to_csv(FLEET, index=False); st.rerun()
+    with st.expander("Add Vehicle"):
+        y = st.selectbox("Year", range(2027, 1990, -1))
+        ma, mo = st.text_input("Make"), st.text_input("Model")
+        ct = st.radio("Type", ["Car/SUV", "Truck", "Motorcycle"])
+        if st.button("Save Vehicle"):
+            new_v = pd.DataFrame([{"Year": y, "Make": ma, "Model": mo, "Cat": ct}])
+            pd.concat([pd.read_csv(FLEET), new_v]).to_csv(FLEET, index=False); st.rerun()
 
-# --- 5. DIAGNOSTIC WORKSPACE ---
+# --- 5. WORKSPACE ---
 st.title("📟 ANTONINO'S GARAGE HUB")
-if not active_v: st.warning("SYSTEM READY: PLEASE REGISTER A UNIT."); st.stop()
+if not active_v: st.warning("Please Add a Vehicle in the sidebar to start."); st.stop()
+
+st.markdown(f'<div class="working-on">WORKING ON: {active_v.upper()}</div>', unsafe_allow_html=True)
 
 col1, col2 = st.columns([1.3, 2], gap="large")
 
 with col1:
-    st.subheader(f"UNIT ID: {active_v}")
-    
-    mode = st.selectbox("SERVICE CATEGORY", ["Oil Change", "Tires", "Repair", "Bulbs", "Legal File", "Admin: History Manager"])
+    mode = st.selectbox("CATEGORY", ["Oil Change", "Tires", "Repair", "Bulbs", "Legal File", "Admin: History Manager"])
     km = st.text_input("ODOMETER (KM)")
-    
     uploaded_file = st.file_uploader("📷 Attach Photo or Receipt", type=['png', 'jpg', 'jpeg'])
-    photo_name = "None"
-    if uploaded_file: photo_name = uploaded_file.name
+    photo_name = uploaded_file.name if uploaded_file else "None"
 
     st.divider()
     entry = {k: "" for k in COLS}
 
-    if mode == "Admin: History Manager":
-        full_log = pd.read_csv(LOG)
-        unit_rows = full_log[full_log["Unit"] == active_v]
-        if not unit_rows.empty:
-            unit_rows['Display'] = unit_rows['Date'] + " - " + unit_rows['Type']
-            target = st.selectbox("Select Record to Remove", unit_rows.index, format_func=lambda x: unit_rows.loc[x, 'Display'])
-            if st.button("🗑️ DELETE PERMANENTLY"):
-                full_log.drop(target).to_csv(LOG, index=False); st.success("Deleted"); st.rerun()
-
-    elif mode == "Oil Change":
-        entry["Oil_M"] = st.text_input("Engine Oil Grade")
+    if mode == "Oil Change":
+        o_type = st.selectbox("Oil Type", ["Full Synthetic", "Synthetic Blend", "Conventional", "High Mileage"])
+        o_grade = st.text_input("Oil Grade (e.g. 5W-30)")
+        o_liters = st.text_input("Quantity (Liters)")
+        
         if active_cat == "Motorcycle":
             c1, c2 = st.columns(2)
-            with c1: 
-                entry["Oil_P"] = st.text_input("Primary Oil")
-            with c2: 
-                entry["Oil_T"] = st.text_input("Trans Oil")
-        entry["Notes"] = st.text_input("Filter/Notes")
-        if st.button("SAVE OIL LOG"):
+            with c1: entry["Oil_P"] = st.text_input("Primary Oil")
+            with c2: entry["Oil_T"] = st.text_input("Trans Oil")
+        
+        o_filter = st.text_input("Filter Part #")
+        o_notes = st.text_area("Additional Notes")
+        entry["Oil_M"] = f"{o_grade} ({o_type})"
+        entry["Notes"] = f"{o_liters}L | Filter: {o_filter} | {o_notes}"
+        
+        if st.button("Save Oil Service"):
             row = pd.DataFrame([[datetime.now().strftime("%Y-%m-%d"), active_v, mode, km, entry["Notes"], entry["Oil_M"], entry["Oil_P"], entry["Oil_T"], "", "", "", photo_name]], columns=COLS)
             pd.concat([pd.read_csv(LOG), row]).to_csv(LOG, index=False); st.rerun()
 
     elif mode == "Tires":
         c1, c2 = st.columns(2)
-        with c1: 
-            entry["F_Tire"] = st.text_input("Front Size / PSI")
-        with c2: 
-            entry["R_Tire"] = st.text_input("Rear Size / PSI")
-        entry["Notes"] = st.text_input("Torque / Misc")
-        if st.button("SAVE TIRE LOG"):
-            row = pd.DataFrame([[datetime.now().strftime("%Y-%m-%d"), active_v, mode, km, entry["Notes"], "", "", "", entry["F_Tire"], entry["R_Tire"], "", photo_name]], columns=COLS)
+        with c1: f_t = st.text_input("Front Size / PSI")
+        with c2: r_t = st.text_input("Rear Size / PSI")
+        t_notes = st.text_input("Torque / Misc")
+        if st.button("Save Tire Service"):
+            row = pd.DataFrame([[datetime.now().strftime("%Y-%m-%d"), active_v, mode, km, t_notes, "", "", "", f_t, r_t, "", photo_name]], columns=COLS)
             pd.concat([pd.read_csv(LOG), row]).to_csv(LOG, index=False); st.rerun()
 
     elif mode == "Repair":
-        entry["Notes"] = st.text_area("Work Performed Details")
-        if st.button("SAVE REPAIR LOG"):
-            row = pd.DataFrame([[datetime.now().strftime("%Y-%m-%d"), active_v, mode, km, entry["Notes"], "", "", "", "", "", "", photo_name]], columns=COLS)
+        rep_notes = st.text_area("Work Details")
+        if st.button("Save Repair"):
+            row = pd.DataFrame([[datetime.now().strftime("%Y-%m-%d"), active_v, mode, km, rep_notes, "", "", "", "", "", "", photo_name]], columns=COLS)
             pd.concat([pd.read_csv(LOG), row]).to_csv(LOG, index=False); st.rerun()
 
-    elif mode == "Bulbs":
-        entry["Bulbs"] = st.text_input("Bulb Spec")
-        entry["Notes"] = st.text_input("Location")
-        if st.button("SAVE BULB LOG"):
-            row = pd.DataFrame([[datetime.now().strftime("%Y-%m-%d"), active_v, mode, "", entry["Notes"], "", "", "", "", "", entry["Bulbs"], photo_name]], columns=COLS)
-            pd.concat([pd.read_csv(LOG), row]).to_csv(LOG, index=False); st.rerun()
-
-    elif mode == "Legal File":
-        l_type = st.selectbox("Type", ["Registration", "Insurance", "Inspection"])
-        if st.button("LOG LEGAL UPDATE"):
-            row = pd.DataFrame([[datetime.now().strftime("%Y-%m-%d"), active_v, mode, "", f"{l_type} Verified", "", "", "", "", "", "", photo_name]], columns=COLS)
-            pd.concat([pd.read_csv(LOG), row]).to_csv(LOG, index=False); st.rerun()
+    elif mode == "Admin: History Manager":
+        full_log = pd.read_csv(LOG)
+        unit_rows = full_log[full_log["Unit"] == active_v]
+        if not unit_rows.empty:
+            unit_rows['Display'] = unit_rows['Date'] + " - " + unit_rows['Type']
+            target = st.selectbox("Select Record to Remove", unit_rows.index, format_func=lambda x: unit_rows.loc[x, 'Display'])
+            if st.button("Delete Record"):
+                full_log.drop(target).to_csv(LOG, index=False); st.success("Record Deleted"); st.rerun()
 
 with col2:
-    st.subheader(f"📋 {active_v} HISTORY")
+    st.subheader("📋 HISTORY")
     hist_df = pd.read_csv(LOG)
     if not hist_df.empty:
-        unit_history = hist_df[hist_df["Unit"] == active_v].sort_values(by="Date", ascending=False)
-        st.dataframe(unit_history, use_container_width=True, hide_index=True)
+        st.dataframe(hist_df[hist_df["Unit"] == active_v].sort_values(by="Date", ascending=False), use_container_width=True, hide_index=True)
