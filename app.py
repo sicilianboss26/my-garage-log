@@ -21,11 +21,19 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# --- 2. LOGIN ---
-if 'authenticated' not in st.session_state: st.session_state.authenticated = False
+# --- 2. LOGIN LOGIC (FIXED) ---
+if 'authenticated' not in st.session_state:
+    st.session_state.authenticated = False
+
 if not st.session_state.authenticated:
     _, center_col, _ = st.columns([1, 1.8, 1])
     with center_col:
         st.markdown('<div class="login-card">', unsafe_allow_html=True)
         st.markdown('<div class="shop-title">Antonino\'s Garage Hub</div>', unsafe_allow_html=True)
-        input_pin
+        
+        # This fixes the NameError shown in your screenshot
+        user_pin = st.text_input("Enter Shop PIN", type="password", key="pin_input")
+        
+        if st.button("Unlock Terminal"):
+            if user_pin == "1234":
+                st.session_state.authenticated = True
