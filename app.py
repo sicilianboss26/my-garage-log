@@ -28,48 +28,4 @@ if not st.session_state.authenticated:
     with center_col:
         st.markdown('<div class="login-card">', unsafe_allow_html=True)
         st.markdown('<div class="shop-title">Antonino\'s Garage Hub</div>', unsafe_allow_html=True)
-        input_pin = st.text_input("Enter Shop PIN", type="password")
-        if st.button("Unlock Terminal"):
-            if input_pin == "1234": st.session_state.authenticated = True; st.rerun()
-            else: st.error("Access Denied")
-        st.markdown('</div>', unsafe_allow_html=True)
-    st.stop()
-
-# --- 3. DATA STORAGE ---
-LOG, FLEET = "maintenance_log.csv", "fleet_database.csv"
-COLS = ["Date", "Unit", "Type", "Notes", "Oil_M", "Oil_P", "Oil_T", "F_Tire", "R_Tire", "Bulbs"]
-if not os.path.exists(LOG): pd.DataFrame(columns=COLS).to_csv(LOG, index=False)
-if not os.path.exists(FLEET): pd.DataFrame(columns=["Year", "Make", "Model", "Category"]).to_csv(FLEET, index=False)
-
-# --- 4. SIDEBAR ---
-with st.sidebar:
-    st.markdown("### 🔧 Shop Control")
-    if st.button("🔒 Lock App"): st.session_state.authenticated = False; st.rerun()
-    st.divider()
-    fleet_df = pd.read_csv(FLEET)
-    active_unit, active_cat = None, None
-    if not fleet_df.empty:
-        fleet_df["D"] = fleet_df["Year"].astype(str) + " " + fleet_df["Make"] + " " + fleet_df["Model"]
-        active_unit = st.selectbox("Select Vehicle", fleet_df["D"].tolist())
-        active_cat = fleet_df[fleet_df["D"] == active_unit]["Category"].values[0]
-        with st.expander("🗑️ Remove Vehicle"):
-            if st.button("Delete Active Unit"):
-                pd.read_csv(FLEET)[fleet_df["D"] != active_unit].to_csv(FLEET, index=False)
-                st.rerun()
-    with st.expander("➕ Add Vehicle"):
-        vy, vma, vmo = st.selectbox("Year", range(2027, 1990, -1)), st.text_input("Make"), st.text_input("Model")
-        vct = st.radio("Type", ["Car/SUV", "Truck", "Motorcycle", "E-Bike"])
-        if st.button("Save"):
-            new_v = pd.DataFrame([{"Year": vy, "Make": vma, "Model": vmo, "Category": vct}])
-            pd.concat([pd.read_csv(FLEET), new_v]).to_csv(FLEET, index=False); st.rerun()
-
-# --- 5. DASHBOARD ---
-st.title("🛠️ The Garage Hub")
-if not active_unit: st.info("👈 Add a vehicle to start."); st.stop()
-
-c1, c2 = st.columns([1, 2], gap="large")
-with c1:
-    st.subheader(f"⚙️ {active_unit}")
-    with st.container(border=True):
-        l_t = st.selectbox("Activity", ["Tires", "Repair", "Oil Change", "Bulbs", "3D Printed Part", "Legal"])
-        data = {k: "" for k in
+        input_pin
