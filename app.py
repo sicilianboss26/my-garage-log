@@ -1,78 +1,84 @@
 import streamlit as st
-import streamlit.components.v1 as components
+import pandas as pd
+from datetime import datetime
+from PIL import Image
+import os
 
-st.set_page_config(layout="wide", page_title="Garage Hub")
+# --- PIN CONFIGURATION ---
+ACCESS_PIN = "1234"
 
-# MASTER CODE - CONDENSED TO PREVENT TRUNCATION
-garage_code = """
-<!DOCTYPE html>
-<html>
-<head>
-    <style>
-        body { background: #0b0b0b; color: #fff; font-family: sans-serif; margin: 0; display: flex; height: 100vh; justify-content: center; align-items: center; }
-        #login { text-align: center; background: #111; padding: 40px; border-radius: 15px; border: 1px solid #ff9d00; }
-        .pin-in { background: #222; border: 1px solid #444; color: #ff9d00; font-size: 2rem; text-align: center; width: 140px; padding: 10px; margin: 20px 0; border-radius: 10px; }
-        #dash { display: none; width: 100%; height: 100%; flex-direction: row; }
-        #side { width: 280px; background: #111; height: 100%; border-right: 1px solid #333; padding: 25px; box-sizing: border-box; display: flex; flex-direction: column; }
-        .logo { font-size: 1.4rem; font-weight: 900; color: #ff9d00; border-bottom: 2px solid #ff9d00; padding-bottom: 5px; margin-bottom: 20px; text-transform: uppercase; }
-        .lbl { color: #555; font-size: 0.7rem; text-transform: uppercase; margin: 15px 0 5px 0; }
-        .item { display: block; width: 100%; padding: 10px; color: #bbb; background: none; border: none; text-align: left; cursor: pointer; border-radius: 6px; }
-        .item:hover { background: #222; color: #ff9d00; }
-        .vault { margin-top: auto; background: #181818; border-radius: 8px; border: 1px solid #333; }
-        summary { padding: 10px; color: #ff9d00; font-weight: bold; cursor: pointer; }
-        #main { flex: 1; padding: 40px; background: radial-gradient(at top left, #1a1a1a, #0b0b0b); overflow-y: auto; }
-        .card { background: #141414; padding: 30px; border-radius: 15px; border: 1px solid #333; max-width: 600px; }
-        input { width: 100%; padding: 12px; background: #222; border: 1px solid #444; color: white; border-radius: 6px; margin-bottom: 15px; box-sizing: border-box; }
-        .btn { background: #ff9d00; color: #000; border: none; padding: 15px; width: 100%; font-weight: bold; cursor: pointer; border-radius: 6px; }
-    </style>
-</head>
-<body>
-    <div id="login">
-        <h1 style="color:#ff9d00; margin:0;">GARAGE HUB</h1>
-        <input type="password" id="pin" class="pin-in" maxlength="4" placeholder="****">
-        <button class="btn" onclick="check()">UNLOCK</button>
-    </div>
-    <div id="dash">
-        <div id="side">
-            <div class="logo">GARAGE HUB</div>
-            <div class="lbl">Your Fleet</div>
-            <div id="fleet">
-                <button class="item">2012 GMC Terrain</button>
-                <button class="item">2018 Hyundai Kona</button>
-                <button class="item">2020 Street Bob</button>
-            </div>
-            <div class="lbl">Maintenance</div>
-            <button class="item">Oil Change (3-Hole)</button>
-            <button class="item">Tire Service</button>
-            <div class="lbl">Legal</div>
-            <button class="item">License & Docs</button>
-            <details class="vault">
-                <summary>📁 Records</summary>
-                <button class="item" style="padding-left:25px;">History</button>
-                <button class="item" style="padding-left:25px;">Expenses</button>
-            </details>
-        </div>
-        <div id="main">
-            <div class="card">
-                <h2 style="color:#ff9d00; margin-top:0;">Vehicle License</h2>
-                <label style="color:#666;">Renewal Date</label><input type="date">
-                <label style="color:#666;">Fee ($)</label><input type="number" placeholder="0.00">
-                <label style="color:#666;">Document</label><input type="file">
-                <button class="btn">UPDATE RECORDS</button>
-            </div>
-        </div>
-    </div>
-    <script>
-        function check() {
-            if (document.getElementById('pin').value === "1234") {
-                document.getElementById('login').style.display = 'none';
-                document.getElementById('dash').style.display = 'flex';
-                document.body.style.display = 'block';
-            } else { alert("INVALID PIN"); }
-        }
-    </script>
-</body>
-</html>
-"""
+# Initialize Login State
+if "authenticated" not in st.session_state:
+    st.session_state["authenticated"] = False
 
-components.html(garage_code, height=1000, scrolling=True)
+# --- LOGIN SCREEN ---
+if not st.session_state["authenticated"]:
+    st.title("Garage Hub")
+    pin_input = st.text_input("Enter Access PIN", type="password")
+    
+    if st.button("Unlock System"):
+        if pin_input == ACCESS_PIN:
+            st.session_state["authenticated"] = True
+            st.rerun()
+        else:
+            st.error("Access Denied: Invalid PIN")
+    st.stop() # Stops the rest of the app from running until logged in
+
+# --- YOUR ORIGINAL DASHBOARD STARTS HERE ---
+# (The code below only runs if authenticated is True)
+
+# Note: Ensure your 'active_unit', 'LOG', 'COLS', etc., are defined above this snippet
+st.write("📑 **Legal/Papers**")
+doc = st.selectbox("Doc Type", ["Insurance", "Registration", "Safety"]) 
+l_notes = f"{doc} Update" 
+extra_n = st.text_area("Notes", placeholder="Specific details...", key=f"notes_{active_unit}") 
+l_notes = f"{l_notes} | {extra_n}" if extra_n else l_notes 
+
+gal = st.file_uploader("Photo/Receipt", type=['jpg', 'jpeg', 'png'], key=f"g_{active_unit}") 
+
+if st.button("💾 Save Entry"):
+    p_p = "" 
+    if gal:
+        # Create directory if it doesn't exist
+        if not os.path.exists(IMG): os.makedirs(IMG)
+        p_p = f"{IMG}/{active_unit.replace(' ','_')}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg" 
+        Image.open(gal).save(p_p) 
+    
+    # Assuming l_t, l_cost, l_km, nxt, o_g, o_f, pri, tra, bat, f_sz, r_sz, l_b, h_b are defined earlier in your script
+    new_row = pd.DataFrame([[datetime.now().strftime("%Y-%m-%d"), active_unit, l_t, l_cost, l_km, nxt, l_notes, p_p, o_g, o_f, pri, tra, bat, f_sz, r_sz, l_b, h_b]], columns=COLS) 
+    save_df(pd.concat([get_df(LOG), new_row]), LOG) 
+    st.rerun()
+
+with c2:
+    tab1, tab2 = st.tabs(["📊 Service History", "💰 Expense Tracker"])
+    hist = get_df(LOG)
+    
+    if not hist.empty:
+        u_h = hist[hist["Unit"] == active_unit].sort_values("Date", ascending=False)
+        
+        with tab1:
+            st.dataframe(u_h[["Date", "Type", "KM", "Notes"]], use_container_width=True, hide_index=True)
+            if st.toggle("🔓 Edit Entries"):
+                edited_df = st.data_editor(u_h, use_container_width=True, hide_index=True, key=f"editor_{active_unit}")
+                if st.button("Apply Changes"):
+                    save_df(pd.concat([hist[~hist.index.isin(u_h.index)], edited_df], ignore_index=True), LOG)
+                    st.rerun()
+
+        with tab2: 
+            st.subheader("Investment Summaries") 
+            finance_df = u_h[u_h["Type"].isin(["Repair", "Oil Change", "Tire Service", "Battery"])] 
+            mc1, mc2, mc3, mc4 = st.columns(4) 
+            
+            r_sum = finance_df[finance_df["Type"] == "Repair"]["Cost"].sum() 
+            o_sum = finance_df[finance_df["Type"] == "Oil Change"]["Cost"].sum() 
+            t_sum = finance_df[finance_df["Type"] == "Tire Service"]["Cost"].sum() 
+            b_sum = finance_df[finance_df["Type"] == "Battery"]["Cost"].sum() 
+            
+            mc1.metric("Repairs", f"${r_sum:,.2f}") 
+            mc2.metric("Oil", f"${o_sum:,.2f}") 
+            mc3.metric("Tires", f"${t_sum:,.2f}") 
+            mc4.metric("Battery", f"${b_sum:,.2f}") 
+            
+            st.divider() 
+            st.metric("Total Overall Investment", f"${finance_df['Cost'].sum():,.2f}") 
+            st.dataframe(finance_df[["Date", "Type", "Cost", "Notes"]].style.format({"Cost": "${:,.2f}"}), use_container_width=True, hide_index=True)
