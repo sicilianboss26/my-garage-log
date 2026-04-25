@@ -1,183 +1,155 @@
-import streamlit as st
-import streamlit.components.v1 as components
-
-# Forces the app to use the full width of your screen
-st.set_page_config(layout="wide", page_title="Garage Hub")
-
-# The Full Industrial Dashboard Code
-garage_html = """
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
     <style>
-        body { 
-            background-color: #0f0f0f; 
-            color: #ffffff; 
-            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; 
-            margin: 0; 
-            overflow-x: hidden;
+        :root {
+            --accent: #ff9d00;
+            --bg-dark: #0f0f0f;
+            --panel: #161616;
+            --text-dim: #888;
         }
-        
-        /* Sidebar Restored */
-        .sidebar {
+
+        body {
+            background: var(--bg-dark);
+            color: #fff;
+            font-family: 'Segoe UI', sans-serif;
+            margin: 0;
+            display: flex;
+        }
+
+        /* SIDEBAR - Exactly as built yesterday */
+        #sidebar {
             width: 280px;
-            background-color: #161616;
+            background: var(--panel);
             height: 100vh;
-            position: fixed;
             border-right: 1px solid #333;
-            padding: 30px 20px;
-            box-sizing: border-box;
+            padding: 40px 20px;
+            position: fixed;
         }
 
         .logo {
-            color: #ff9d00;
-            font-size: 1.5rem;
-            font-weight: 800;
-            letter-spacing: 2px;
-            margin-bottom: 40px;
-            border-bottom: 2px solid #ff9d00;
-            padding-bottom: 10px;
-        }
-
-        .nav-section {
-            margin-bottom: 25px;
-        }
-
-        .section-title {
-            color: #666;
-            font-size: 0.75rem;
+            font-size: 1.6rem;
+            font-weight: 900;
+            color: var(--accent);
             text-transform: uppercase;
-            letter-spacing: 1.5px;
-            margin-bottom: 15px;
-            display: block;
+            border-bottom: 2px solid var(--accent);
+            padding-bottom: 10px;
+            margin-bottom: 30px;
         }
 
-        .nav-item {
-            display: block;
-            width: 100%;
-            padding: 12px;
-            color: #aaa;
-            text-decoration: none;
+        .section-label {
+            color: var(--text-dim);
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            margin: 20px 0 10px 0;
+        }
+
+        .nav-btn {
             background: none;
             border: none;
+            color: #bbb;
+            width: 100%;
             text-align: left;
-            font-size: 1rem;
+            padding: 12px;
             cursor: pointer;
             border-radius: 6px;
-            transition: 0.3s;
-            margin-bottom: 5px;
+            font-size: 1rem;
         }
 
-        .nav-item:hover {
+        .nav-btn:hover {
             background: #252525;
-            color: #ff9d00;
+            color: var(--accent);
         }
 
-        /* The New Records Vault */
-        details.records-section {
+        /* NEW RECORDS DRAWER */
+        .records-drawer {
+            margin-top: 15px;
             background: #1d1d1d;
             border-radius: 8px;
-            padding: 5px;
-            margin-top: 10px;
         }
 
         summary {
-            list-style: none;
-            padding: 10px;
+            padding: 12px;
             cursor: pointer;
-            color: #ff9d00;
+            color: var(--accent);
             font-weight: bold;
+            list-style: none;
         }
 
-        /* Main Display Area */
-        .main-container {
+        /* MAIN CONTENT */
+        #main {
             margin-left: 280px;
             padding: 60px;
-            max-width: 900px;
+            width: 100%;
         }
 
         .card {
-            background: #1a1a1a;
+            background: var(--panel);
             padding: 40px;
-            border-radius: 15px;
+            border-radius: 12px;
             border: 1px solid #333;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            max-width: 650px;
         }
 
-        h1 { color: #ff9d00; margin-top: 0; font-size: 2.2rem; }
+        h2 { color: var(--accent); margin-top: 0; }
 
-        .input-group { margin-bottom: 20px; }
-        label { display: block; margin-bottom: 8px; color: #888; font-size: 0.9rem; }
-        
         input {
             width: 100%;
             padding: 12px;
             background: #252525;
             border: 1px solid #444;
             color: white;
-            border-radius: 8px;
-            font-size: 1rem;
+            border-radius: 6px;
+            margin: 10px 0 20px 0;
         }
 
-        .btn-save {
-            background: #ff9d00;
-            color: black;
+        .save-btn {
+            background: var(--accent);
+            color: #000;
             border: none;
-            padding: 15px 30px;
-            font-weight: bold;
-            border-radius: 8px;
-            cursor: pointer;
+            padding: 15px;
             width: 100%;
-            margin-top: 20px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
+            font-weight: bold;
+            border-radius: 6px;
+            cursor: pointer;
         }
     </style>
 </head>
 <body>
-    <div class="sidebar">
-        <div class="logo">GARAGE HUB</div>
+
+    <div id="sidebar">
+        <div class="logo">Garage Hub</div>
         
-        <div class="nav-section">
-            <span class="section-title">Maintenance</span>
-            <button class="nav-item">Battery Repairs</button>
-            <button class="nav-item">Oil Changes</button>
-            <button class="nav-item">Tire Service</button>
-        </div>
+        <div class="section-label">Maintenance</div>
+        <button class="nav-btn">Battery Repairs</button>
+        <button class="nav-btn">Oil Changes</button>
+        <button class="nav-btn">Tire Service</button>
 
-        <div class="nav-section">
-            <span class="section-title">Legal</span>
-            <button class="nav-item">License & Docs</button>
-        </div>
+        <div class="section-label">Legal</div>
+        <button class="nav-btn">License & Docs</button>
 
-        <details class="records-section">
-            <summary>📁 RECORDS</summary>
-            <button class="nav-item">Service History</button>
-            <button class="nav-item">Expense Tracker</button>
+        <details class="records-drawer">
+            <summary>📁 Records Archive</summary>
+            <button class="nav-btn" style="padding-left: 25px;">History</button>
+            <button class="nav-btn" style="padding-left: 25px;">Expense Tracker</button>
         </details>
     </div>
 
-    <div class="main-container">
+    <div id="main">
         <div class="card">
-            <h1>Vehicle License</h1>
-            <div class="input-group">
-                <label>Renewal Date</label>
-                <input type="date">
-            </div>
-            <div class="input-group">
-                <label>Renewal Fee</label>
-                <input type="number" placeholder="$0.00">
-            </div>
-            <div class="input-group">
-                <label>Document Upload (PDF/Image)</label>
-                <input type="file">
-            </div>
-            <button class="btn-save">Save to Legal Folder</button>
+            <h2>Vehicle License</h2>
+            <label>Renewal Date</label>
+            <input type="date">
+            
+            <label>Renewal Fee ($)</label>
+            <input type="number" placeholder="0.00">
+            
+            <label>Digital Copy (Stored in /Legal/Docs/)</label>
+            <input type="file">
+            
+            <button class="save-btn">UPDATE LEGAL RECORDS</button>
         </div>
     </div>
+
 </body>
 </html>
-"""
-
-# Rendering it with enough height to show the whole sidebar
-components.html(garage_html, height=900, scrolling=True)
