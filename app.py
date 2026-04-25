@@ -23,6 +23,7 @@ st.markdown("""
     .stButton>button:hover { background-color: #ff3333; border: none; color: white; }
     div[data-testid="stExpander"] { border: 1px solid #333; border-radius: 8px; background-color: #262730; }
     h1, h2, h3 { color: #ff4b4b !important; }
+    [data-testid="stMetricValue"] { color: #00ff00 !important; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -38,8 +39,8 @@ if not os.path.exists(IMG): os.makedirs(IMG)
 if not os.path.exists(FLEET):
     pd.DataFrame(columns=["Year", "Make", "Model", "Category"]).to_csv(FLEET, index=False)
 
-# Added "Cost" to the permanent columns
-COLS = ["Date", "Unit", "KM", "Next_KM", "Type", "Cost", "Ref", "Oil_G", "Oil_Q", "Oil_Cat", "Oil_F", "Primary_Oil", "Trans_Oil", "Air_F", "Batt", "Tire_S", "Front_Size", "Rear_Size", "Low_B", "High_B", "Fog", "Blink", "Dom", "Ins", "Reg", "Photo", "Notes"]
+# Fixed COLS to include Cost and ensure it's at the front for visibility
+COLS = ["Date", "Unit", "Type", "Cost", "KM", "Next_KM", "Notes", "Photo", "Oil_G", "Oil_F", "Primary_Oil", "Trans_Oil", "Batt", "F_Tire", "R_Tire", "Low_B", "High_B"]
 if not os.path.exists(LOG):
     pd.DataFrame(columns=COLS).to_csv(LOG, index=False)
 
@@ -81,95 +82,76 @@ if not active_unit:
     st.info("👈 Add a vehicle in the sidebar to begin."); st.stop()
 
 c1, c2 = st.columns([1, 2], gap="large")
+
 with c1:
     st.subheader(f"⚙️ Working on: {active_unit}")
     with st.container(border=True):
-        l_t = st.selectbox("Activity", ["Oil Change", "Tire Service", "Bulbs", "Battery", "Repair", "Legal"], key=f"t_{active_unit}")
+        l_t = st.selectbox("Activity", ["Repair", "Oil Change", "Tire Service", "Bulbs", "Battery", "Legal"], key=f"t_{active_unit}")
+        l_km = st.number_input("Current KM", min_value=0, step=1, key=f"k_{active_unit}")
         
-        l_km = 0
-        if l_t not in ["Battery", "Legal"]:
-            l_km = st.number_input("Current KM", min_value=0, step=1, key=f"k_{active_unit}")
-
-        o_g, o_q, o_c, o_f, pri, tra, a_f, bat, t_s, f_sz, r_sz, l_b, h_b, fog, blk, dom, ins, reg, p_p, nxt = "","","","","","","","","","", "","","","","","","","", "", 0
-        l_notes = ""
+        # Internal placeholders
+        o_g, o_f, pri, tra, bat, f_sz, r_sz, l_b, h_b, nxt = "", "", "", "", "", "", "", "", "", 0
         l_cost = 0.0
+        l_notes = ""
 
-        if l_t == "Tire Service":
-            label = "🔧 **Tire Size**" if unit_cat != "Motorcycle" else "🔧 **Front Tire Size**"
-            st.write(label)
-            t_f1, t_f2, t_f3 = st.columns(3)
-            fw, fa, fr = t_f1.text_input("W"), t_f2.text_input("R"), t_f3.text_input("D")
-            f_sz = f"{fw}/{fa}R{fr}" if fw and fa and fr else ""
-            if unit_cat == "Motorcycle":
-                st.write("🏍️ **Rear Tire Size**")
-                tr1, tr2, tr3 = st.columns(3)
-                rw, ra, rd = tr1.text_input("W "), tr2.text_input("R "), tr3.text_input("D ")
-                r_sz = f"{rw}/{ra}R{rd}" if rw and ra and rd else ""
-
-        elif l_t == "Oil Change":
-            if unit_cat == "Motorcycle":
-                st.markdown("🏍️ **Engine Oil**")
-                m1, m2 = st.columns(2); o_g, o_f = m1.text_input("Grade"), m2.text_input("Filter #")
-                o_c = st.selectbox("Type", ["Full Synthetic", "Synthetic Blend", "V-Twin Blend", "Mineral"])
-                st.markdown("⚙️ **Drivetrain**")
-                m3, m4 = st.columns(2); pri, tra = m3.text_input("Primary"), m4.text_input("Trans")
-            else:
-                o1, o2 = st.columns(2)
-                o_g, o_f = o1.text_input("Grade"), st.text_input("Filter #")
-                o_c = o2.selectbox("Type", ["Full Synthetic", "High Mileage", "Conventional"])
-            nxt = l_km + 8000
-
-        elif l_t == "Repair":
+        if l_t == "Repair":
             st.write("📋 **Work Details**")
             sel_comp = st.selectbox("System", ["Engine", "Transmission", "Suspension", "Brakes", "Electrical", "Body", "Audio"])
-            sel_act = st.radio("Action", ["Replace", "Repair", "Service", "Inspect"], horizontal=True)
             parts_data = pd.DataFrame([{"Part": "", "Price": 0.00}])
             edited_parts = st.data_editor(parts_data, num_rows="dynamic", use_container_width=True)
-            l_cost = edited_parts["Price"].sum()
+            l_cost = float(edited_parts["Price"].sum())
             st.metric("Final Cost", f"${l_cost:,.2f}")
-            l_notes = f"System: {sel_comp} | Action: {sel_act}"
+            l_notes = f"{sel_comp} Repair"
 
-        elif l_t == "Battery":
-            st.write("🔋 **Battery Specs**")
-            b1, b2 = st.columns(2)
-            bat = f"Size: {b1.text_input('Size')} | CCA: {b2.text_input('CCA')} | V: {b1.text_input('Volts')} | Brand: {b2.text_input('Brand')}"
+        elif l_t == "Oil Change":
+            m1, m2 = st.columns(2); o_g, o_f = m1.text_input("Grade"), m2.text_input("Filter #")
+            if unit_cat == "Motorcycle":
+                m3, m4 = st.columns(2); pri, tra = m3.text_input("Primary"), m4.text_input("Trans")
+            l_cost = st.number_input("Oil/Parts Cost", min_value=0.0, step=0.01)
+            nxt = l_km + 8000
 
-        elif l_t == "Legal":
-            st.write("📑 **Records**")
-            leg_c1, leg_c2 = st.columns(2)
-            doc_type = leg_c1.selectbox("Doc", ["Registration", "Insurance", "Safety", "Permit"])
-            l_notes = f"Type: {doc_type} | Ref: {leg_c2.text_input('Ref #')} | Exp: {st.date_input('Expiry')}"
+        elif l_t == "Tire Service":
+            t_f1, t_f2, t_f3 = st.columns(3)
+            f_sz = f"{t_f1.text_input('W')}/{t_f2.text_input('R')}R{t_f3.text_input('D')}"
+            l_cost = st.number_input("Service Cost", min_value=0.0, step=0.01)
 
-        elif l_t == "Bulbs":
-            st.write("💡 **Lighting**")
-            l_c1, l_c2 = st.columns(2)
-            l_b, h_b = l_c1.text_input("Low Beam"), l_c2.text_input("High Beam")
-            blk = l_c1.text_input("Blinkers")
-            if unit_cat != "Motorcycle":
-                fog, dom, reg = l_c2.text_input("Fog"), l_c1.text_input("Dome"), l_c2.text_input("Plate")
-
-        extra_n = st.text_area("Notes", key=f"notes_{active_unit}")
+        extra_n = st.text_area("Notes", placeholder="Specific details here...", key=f"notes_{active_unit}")
         l_notes = f"{l_notes} | {extra_n}" if l_notes else extra_n
         gal = st.file_uploader("Photo/Receipt", type=['jpg', 'jpeg', 'png'], key=f"g_{active_unit}")
         
-        if st.button("Save Entry"):
+        if st.button("💾 Save Entry"):
+            p_p = ""
             if gal:
                 p_p = f"{IMG}/{active_unit.replace(' ','_')}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg"
                 Image.open(gal).save(p_p)
-            save_df(pd.concat([get_df(LOG), pd.DataFrame([[datetime.now().strftime("%Y-%m-%d"), active_unit, l_km, nxt, l_t, l_cost, "", o_g, o_q, o_c, o_f, pri, tra, a_f, bat, t_s, f_sz, r_sz, l_b, h_b, fog, blk, dom, str(ins), str(reg), p_p, l_notes]], columns=COLS)]), LOG); st.rerun()
+            
+            new_row = pd.DataFrame([[datetime.now().strftime("%Y-%m-%d"), active_unit, l_t, l_cost, l_km, nxt, l_notes, p_p, o_g, o_f, pri, tra, bat, f_sz, r_sz, l_b, h_b]], columns=COLS)
+            save_df(pd.concat([get_df(LOG), new_row]), LOG)
+            st.rerun()
 
 with c2:
-    st.subheader(f"📊 Service History")
+    tab1, tab2 = st.tabs(["📊 Service History", "💰 Expense Tracker"])
+    
     hist = get_df(LOG)
     if not hist.empty:
         u_h = hist[hist["Unit"] == active_unit].sort_values("Date", ascending=False)
         
-        # Display cost as a highlighted column in the history view
-        st.dataframe(u_h[["Date", "Type", "Cost", "KM", "Notes"]], use_container_width=True, hide_index=True)
-        
-        edit_mode = st.toggle("🔓 Unlock Management Mode")
-        if edit_mode:
-            edited_df = st.data_editor(u_h, use_container_width=True, hide_index=True, num_rows="dynamic")
-            if st.button("💾 Apply All Changes"):
-                save_df(pd.concat([hist[hist["Unit"] != active_unit], edited_df], ignore_index=True), LOG)
-                st.rerun()
+        with tab1:
+            st.dataframe(u_h[["Date", "Type", "KM", "Notes"]], use_container_width=True, hide_index=True)
+            if st.toggle("🔓 Edit Entries"):
+                edited_df = st.data_editor(u_h, use_container_width=True, hide_index=True)
+                if st.button("Apply Changes"):
+                    save_df(pd.concat([hist[hist["Unit"] != active_unit], edited_df], ignore_index=True), LOG)
+                    st.rerun()
+
+        with tab2:
+            st.subheader("Financial Breakdown")
+            total_spent = u_h["Cost"].sum()
+            st.metric("Total Investment", f"${total_spent:,.2f}")
+            
+            # Pricing specific history
+            st.dataframe(
+                u_h[["Date", "Type", "Cost", "Notes"]].style.format({"Cost": "${:,.2f}"}),
+                use_container_width=True, 
+                hide_index=True
+            )
