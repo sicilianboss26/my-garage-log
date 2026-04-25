@@ -131,16 +131,16 @@ with col1:
             entry["Notes"] = f"{o_liters}L | Filter: {o_filter} | {note_content}"
 
     elif mode == "Tires":
-        st.markdown(f"### {'🏍️ Moto' if active_cat == 'Motorcycle' else '🚗 Vehicle'} Tires")
+        st.markdown("### Tires")
         ft1, ft2 = st.columns([2, 1])
-        f_s = ft1.text_input("Front Size/Brand")
+        f_s = ft1.text_input("Front Size")
         f_p = ft2.text_input("Front PSI")
         rt1, rt2 = st.columns([2, 1])
-        r_s = rt1.text_input("Rear Size/Brand")
+        r_s = rt1.text_input("Rear Size")
         r_p = rt2.text_input("Rear PSI")
         entry["F_Tire"] = f"{f_s} ({f_p} PSI)"
         entry["R_Tire"] = f"{r_s} ({r_p} PSI)"
-        entry["Notes"] = st.text_area("Service Notes")
+        entry["Notes"] = st.text_area("Service")
 
     elif mode == "Repair":
         systems = ["Engine", "Transmission", "Electrical", "Suspension", "Brakes", "Exhaust", "Body"]
