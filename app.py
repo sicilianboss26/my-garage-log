@@ -44,7 +44,7 @@ if not st.session_state.auth:
 
 # --- 3. DATABASE ---
 LOG, FLEET = "maintenance_log.csv", "fleet_database.csv"
-COLS = ["Date", "Unit", "Type", "KM", "Notes", "Oil_M", "Oil_P", "Oil_T", "F_Tire", "R_Tire", "Bulbs", "Photo"]
+COLS = ["Date", "Vehicle", "Type", "KM", "Notes", "Oil_M", "Oil_P", "Oil_T", "F_Tire", "R_Tire", "Bulbs", "Photo"]
 
 if not os.path.exists(LOG): pd.DataFrame(columns=COLS).to_csv(LOG, index=False)
 if not os.path.exists(FLEET): pd.DataFrame(columns=["Year", "Make", "Model", "Cat"]).to_csv(FLEET, index=False)
@@ -54,30 +54,21 @@ with st.sidebar:
     st.markdown("### 🛠️ CONTROL")
     if st.button("Log Out"): st.session_state.auth = False; st.rerun()
     st.divider()
-    
     f_df = pd.read_csv(FLEET)
     active_v, active_cat = None, "Car/SUV"
-    
     if not f_df.empty:
         f_df["Name"] = f_df["Year"].astype(str) + " " + f_df["Make"] + " " + f_df["Model"]
         active_v = st.selectbox("SELECT VEHICLE", f_df["Name"].tolist())
         active_cat = f_df[f_df["Name"] == active_v]["Cat"].values[0]
-
         with st.expander("Delete Vehicle"):
-            st.warning(f"Removing {active_v} will not delete its history.")
             if st.button("Confirm Delete"):
-                # Filters the vehicle list and saves
-                new_f = f_df[f_df["Name"] != active_v][["Year", "Make", "Model", "Cat"]]
-                new_f.to_csv(FLEET, index=False)
-                st.rerun()
-
+                pd.read_csv(FLEET)[f_df["Name"] != active_v].to_csv(FLEET, index=False); st.rerun()
     with st.expander("Add Vehicle"):
-        y = st.selectbox("Year", range(2027, 1990, -1))
-        ma, mo = st.text_input("Make"), st.text_input("Model")
+        y = st.selectbox("Year", range(2027, 1990, -1)); ma, mo = st.text_input("Make"), st.text_input("Model")
         ct = st.radio("Type", ["Car/SUV", "Truck", "Motorcycle"])
         if st.button("Save Vehicle"):
-            new_v = pd.DataFrame([{"Year": y, "Make": ma, "Model": mo, "Cat": ct}])
-            pd.concat([pd.read_csv(FLEET), new_v]).to_csv(FLEET, index=False); st.rerun()
+            new = pd.DataFrame([{"Year": y, "Make": ma, "Model": mo, "Cat": ct}])
+            pd.concat([pd.read_csv(FLEET), new]).to_csv(FLEET, index=False); st.rerun()
 
 # --- 5. WORKSPACE ---
 st.title("📟 ANTONINO'S GARAGE HUB")
@@ -98,30 +89,36 @@ with col1:
 
     if mode == "Oil Change":
         o_type = st.selectbox("Oil Type", ["Full Synthetic", "Synthetic Blend", "Conventional", "High Mileage"])
-        o_grade = st.text_input("Oil Grade (e.g. 5W-30)")
+        o_grade = st.text_input("Oil Grade")
         o_liters = st.text_input("Quantity (Liters)")
-        
         if active_cat == "Motorcycle":
             c1, c2 = st.columns(2)
             with c1: entry["Oil_P"] = st.text_input("Primary Oil")
             with c2: entry["Oil_T"] = st.text_input("Trans Oil")
-        
         o_filter = st.text_input("Filter Part #")
         o_notes = st.text_area("Additional Notes")
         entry["Oil_M"] = f"{o_grade} ({o_type})"
         entry["Notes"] = f"{o_liters}L | Filter: {o_filter} | {o_notes}"
-        
         if st.button("Save Oil Service"):
             row = pd.DataFrame([[datetime.now().strftime("%Y-%m-%d"), active_v, mode, km, entry["Notes"], entry["Oil_M"], entry["Oil_P"], entry["Oil_T"], "", "", "", photo_name]], columns=COLS)
             pd.concat([pd.read_csv(LOG), row]).to_csv(LOG, index=False); st.rerun()
 
     elif mode == "Tires":
-        c1, c2 = st.columns(2)
-        with c1: f_t = st.text_input("Front Size / PSI")
-        with c2: r_t = st.text_input("Rear Size / PSI")
-        t_notes = st.text_input("Torque / Misc")
+        # REVISED TIRE SECTION
+        st.markdown("### Front Tires")
+        ft1, ft2 = st.columns([2, 1])
+        with ft1: f_size = st.text_input("Front Size", placeholder="e.g. 245/75R16")
+        with ft2: f_psi = st.text_input("Front PSI")
+        
+        st.markdown("### Rear Tires")
+        rt1, rt2 = st.columns([2, 1])
+        with rt1: r_size = st.text_input("Rear Size")
+        with rt2: r_psi = st.text_input("Rear PSI")
+        
+        t_notes = st.text_area("Tire Service Notes", placeholder="e.g. Rotated tires, checked tread depth")
+        
         if st.button("Save Tire Service"):
-            row = pd.DataFrame([[datetime.now().strftime("%Y-%m-%d"), active_v, mode, km, t_notes, "", "", "", f_t, r_t, "", photo_name]], columns=COLS)
+            row = pd.DataFrame([[datetime.now().strftime("%Y-%m-%d"), active_v, mode, km, t_notes, "", "", "", f"{f_size} ({f_psi} PSI)", f"{r_size} ({r_psi} PSI)", "", photo_name]], columns=COLS)
             pd.concat([pd.read_csv(LOG), row]).to_csv(LOG, index=False); st.rerun()
 
     elif mode == "Repair":
@@ -132,7 +129,7 @@ with col1:
 
     elif mode == "Admin: History Manager":
         full_log = pd.read_csv(LOG)
-        unit_rows = full_log[full_log["Unit"] == active_v]
+        unit_rows = full_log[full_log["Vehicle"] == active_v]
         if not unit_rows.empty:
             unit_rows['Display'] = unit_rows['Date'] + " - " + unit_rows['Type']
             target = st.selectbox("Select Record to Remove", unit_rows.index, format_func=lambda x: unit_rows.loc[x, 'Display'])
@@ -143,4 +140,4 @@ with col2:
     st.subheader("📋 HISTORY")
     hist_df = pd.read_csv(LOG)
     if not hist_df.empty:
-        st.dataframe(hist_df[hist_df["Unit"] == active_v].sort_values(by="Date", ascending=False), use_container_width=True, hide_index=True)
+        st.dataframe(hist_df[hist_df["Vehicle"] == active_v].sort_values(by="Date", ascending=False), use_container_width=True, hide_index=True)
