@@ -17,7 +17,7 @@ st.markdown("""
     .shop-title { color: #ff4b4b; font-size: 32px; font-weight: 900; text-transform: uppercase; letter-spacing: 3px; }
     h1, h2, h3 { color: #ff4b4b !important; font-family: 'Segoe UI', sans-serif; text-transform: uppercase; }
     .working-on { color: #00ff00; font-family: 'Courier New', monospace; font-size: 20px; font-weight: bold; margin-bottom: 20px; }
-    .stTextInput>div>div>input, .stTextArea>div>div>textarea, .stSelectbox>div>div>div { 
+    .stTextInput>div>div>input, .stTextArea>div>div>textarea, .stSelectbox>div>div>div, .stDateInput>div>div>input { 
         background-color: #1c1f26 !important; color: #00ff00 !important; font-family: 'Courier New', monospace; border: 1px solid #444; 
     }
     .stButton>button { 
@@ -30,9 +30,7 @@ st.markdown("""
     """, unsafe_allow_html=True)
 
 # --- 2. LOG IN ---
-if 'auth' not in st.session_state:
-    st.session_state.auth = False
-
+if 'auth' not in st.session_state: st.session_state.auth = False
 if not st.session_state.auth:
     _, center, _ = st.columns([1, 1.5, 1])
     with center:
@@ -40,11 +38,8 @@ if not st.session_state.auth:
         st.markdown('<div class="shop-title">Garage Hub</div>', unsafe_allow_html=True)
         pin = st.text_input("Enter PIN", type="password")
         if st.button("Log In"):
-            if pin == "1234":
-                st.session_state.auth = True
-                st.rerun()
-            else:
-                st.error("Access Denied")
+            if pin == "1234": st.session_state.auth = True; st.rerun()
+            else: st.error("Access Denied")
     st.stop()
 
 # --- 3. DATABASE ---
@@ -57,17 +52,14 @@ if not os.path.exists(FLEET): pd.DataFrame(columns=["Year", "Make", "Model", "Ca
 # --- 4. SIDEBAR ---
 with st.sidebar:
     st.markdown("### 🛠️ CONTROL")
-    if st.button("Log Out"):
-        st.session_state.auth = False
-        st.rerun()
+    if st.button("Log Out"): st.session_state.auth = False; st.rerun()
     st.divider()
     f_df = pd.read_csv(FLEET)
     active_v, active_cat = None, "Car/SUV"
     if not f_df.empty:
         f_df["Name"] = f_df["Year"].astype(str) + " " + f_df["Make"] + " " + f_df["Model"]
         active_v = st.selectbox("SELECT VEHICLE", f_df["Name"].tolist())
-        if active_v:
-            active_cat = f_df[f_df["Name"] == active_v]["Cat"].values[0]
+        if active_v: active_cat = f_df[f_df["Name"] == active_v]["Cat"].values[0]
         with st.expander("Delete Vehicle"):
             if st.button("Confirm Delete"):
                 new_f = f_df[f_df["Name"] != active_v].drop(columns=["Name"])
@@ -88,8 +80,7 @@ col1, col2 = st.columns([1.3, 2], gap="large")
 with col1:
     mode = st.selectbox("CATEGORY", ["Oil Change", "Tires", "Repair", "Diagnostic", "Bulbs", "Legal File"])
     km = ""
-    if mode != "Legal File":
-        km = st.text_input("ODOMETER (KM)")
+    if mode != "Legal File": km = st.text_input("ODOMETER (KM)")
         
     uploaded_file = st.file_uploader("📷 Attach Photo", type=['png', 'jpg', 'jpeg'])
     photo_name = uploaded_file.name if uploaded_file else "None"
@@ -97,6 +88,9 @@ with col1:
 
     entry = {k: "" for k in COLS}
     entry["Date"], entry["Vehicle"], entry["Type"], entry["KM"], entry["Photo"] = datetime.now().strftime("%Y-%m-%d"), active_v, mode, km, photo_name
+
+    # ... [Previous modes Oil, Tires, Repair, Diagnostic, Bulbs remain unchanged] ...
+    # (Including them briefly to ensure the code is complete)
 
     if mode == "Oil Change":
         if active_cat == "Motorcycle":
@@ -135,11 +129,22 @@ with col1:
 
     elif mode == "Legal File":
         st.markdown("### 📄 Legal / Papers")
-        # Added 'License' here
         doc_type = st.selectbox("Document Type", ["Insurance", "Registration", "License"])
-        extra_info = st.text_input("Details", placeholder="Renewal date or ID #")
+        
+        d_col1, d_col2 = st.columns(2)
+        
+        if doc_type == "License":
+            with d_col1: pay_date = st.date_input("Payment / Renewal Date")
+            with d_col2: exp_date = st.date_input("Expiry Date")
+            extra = st.text_input("License ID #")
+            entry["Notes"] = f"Renewed: {pay_date} | Expires: {exp_date} | ID: {extra}"
+        else:
+            with d_col1: from_date = st.date_input("From Date")
+            with d_col2: to_date = st.date_input("To Date")
+            extra = st.text_input("Policy / Account #")
+            entry["Notes"] = f"Period: {from_date} to {to_date} | Ref: {extra}"
+            
         entry["Type"] = f"Legal: {doc_type}"
-        entry["Notes"] = f"{doc_type} Update | {extra_info}"
 
     if st.button("💾 SAVE RECORD"):
         pd.concat([pd.read_csv(LOG), pd.DataFrame([entry])], ignore_index=True).to_csv(LOG, index=False); st.rerun()
