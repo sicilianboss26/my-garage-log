@@ -77,8 +77,14 @@ with c1:
     with st.container(border=True):
         l_t = st.selectbox("Activity", ["Repair", "Oil Change", "Tire Service", "Battery", "Bulbs", "Legal"], key=f"t_{active_unit}")
         
+        # Audio specific logic
+        sel_comp = "None"
+        if l_t == "Repair":
+            sel_comp = st.selectbox("System", ["Engine", "Transmission", "Suspension", "Brakes", "Electrical", "Body", "Audio"])
+
+        # KM Hide Logic: Hide for Battery, Bulbs, Legal, OR Audio Repairs
         l_km = 0
-        if l_t not in ["Battery", "Bulbs", "Legal"]:
+        if l_t not in ["Battery", "Bulbs", "Legal"] and sel_comp != "Audio":
             l_km = st.number_input("Current KM", min_value=0, step=1, key=f"k_{active_unit}")
         
         o_g, o_f, pri, tra, bat, f_sz, r_sz, l_b, h_b, nxt = "", "", "", "", "", "", "", "", "", 0
@@ -86,8 +92,7 @@ with c1:
         l_notes = ""
 
         if l_t == "Repair":
-            st.write("📋 **Work Details**")
-            sel_comp = st.selectbox("System", ["Engine", "Transmission", "Suspension", "Brakes", "Electrical", "Body", "Audio"])
+            st.write(f"📋 **{sel_comp} Details**")
             parts_data = pd.DataFrame([{"Part": "", "Price": 0.00}])
             edited_parts = st.data_editor(parts_data, num_rows="dynamic", use_container_width=True)
             l_cost = float(edited_parts["Price"].sum())
@@ -154,13 +159,9 @@ with c2:
 
         with tab2:
             st.subheader("Investment Summaries")
-            
-            # --- Categorized Totals ---
             finance_df = u_h[u_h["Type"].isin(["Repair", "Oil Change", "Tire Service", "Battery"])]
             
             mc1, mc2, mc3, mc4 = st.columns(4)
-            
-            # Filter totals by category
             repair_tot = finance_df[finance_df["Type"] == "Repair"]["Cost"].sum()
             oil_tot = finance_df[finance_df["Type"] == "Oil Change"]["Cost"].sum()
             tire_tot = finance_df[finance_df["Type"] == "Tire Service"]["Cost"].sum()
