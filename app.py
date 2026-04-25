@@ -20,7 +20,7 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# --- 2. THE LOCK (PIN: 1234) ---
+# --- 2. THE LOCK ---
 if 'auth' not in st.session_state:
     st.session_state.auth = False
 
@@ -39,9 +39,16 @@ if not st.session_state.auth:
         st.markdown('</div>', unsafe_allow_html=True)
     st.stop()
 
-# --- 3. DATABASE CHECK ---
+# --- 3. DATABASE REPAIR & CHECK ---
 LOG, FLEET = "maintenance_log.csv", "fleet_database.csv"
 COLS = ["Date", "Unit", "Type", "Notes", "Oil_M", "Oil_P", "Oil_T", "F_Tire", "R_Tire", "Bulbs"]
+
+# Fix Fleet File if column "Cat" is missing
+if os.path.exists(FLEET):
+    check_df = pd.read_csv(FLEET)
+    if "Cat" not in check_df.columns:
+        check_df["Cat"] = "Car/SUV" # Default fix
+        check_df.to_csv(FLEET, index=False)
 
 if not os.path.exists(LOG): pd.DataFrame(columns=COLS).to_csv(LOG, index=False)
 if not os.path.exists(FLEET): pd.DataFrame(columns=["Year", "Make", "Model", "Cat"]).to_csv(FLEET, index=False)
@@ -55,12 +62,15 @@ with st.sidebar:
     st.divider()
     
     f_df = pd.read_csv(FLEET)
-    active_v, active_cat = None, None
+    active_v, active_cat = None, "Car/SUV"
     
     if not f_df.empty:
         f_df["Name"] = f_df["Year"].astype(str) + " " + f_df["Make"] + " " + f_df["Model"]
         active_v = st.selectbox("Active Vehicle", f_df["Name"].tolist())
-        active_cat = f_df[f_df["Name"] == active_v]["Cat"].values[0]
+        # Safe way to get category without crashing
+        cat_match = f_df[f_df["Name"] == active_v]["Cat"].values
+        if len(cat_match) > 0:
+            active_cat = cat_match[0]
 
     with st.expander("➕ Add Vehicle"):
         y = st.selectbox("Year", range(2027, 1990, -1))
