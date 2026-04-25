@@ -7,7 +7,6 @@ from PIL import Image
 # --- 1. SETUP & CUSTOM THEME ---
 st.set_page_config(page_title="The Garage Hub", page_icon="🔧", layout="wide")
 
-# Custom CSS for a professional "Shop" look
 st.markdown("""
     <style>
     .main { background-color: #1a1c1e; }
@@ -23,10 +22,6 @@ st.markdown("""
     }
     .stButton>button:hover { background-color: #ff3333; border: none; color: white; }
     div[data-testid="stExpander"] { border: 1px solid #333; border-radius: 8px; background-color: #262730; }
-    .stTextInput>div>div>input, .stSelectbox>div>div>select {
-        background-color: #262730 !important;
-        color: #ffffff !important;
-    }
     h1, h2, h3 { color: #ff4b4b !important; }
     </style>
     """, unsafe_allow_html=True)
@@ -50,7 +45,7 @@ if not os.path.exists(LOG):
 def get_df(f): return pd.read_csv(f)
 def save_df(df, f): df.to_csv(f, index=False)
 
-# --- 3. SIDEBAR ---
+# --- 3. SIDEBAR / FLEET MANAGEMENT ---
 fleet_df = get_df(FLEET)
 active_unit, unit_cat = None, "Car"
 
@@ -66,6 +61,14 @@ if not fleet_df.empty:
     fleet_df["D"] = fleet_df["Year"].astype(str) + " " + fleet_df["Make"] + " " + fleet_df["Model"]
     active_unit = st.sidebar.selectbox("Select Active Vehicle", fleet_df["D"].tolist())
     unit_cat = fleet_df[fleet_df["D"] == active_unit]["Category"].values[0]
+    
+    # DELETE VEHICLE LOGIC
+    with st.sidebar.expander("🗑️ Delete Current Vehicle"):
+        st.warning(f"Remove {active_unit} from fleet?")
+        if st.button("Confirm Delete"):
+            new_fleet = fleet_df[fleet_df["D"] != active_unit].drop(columns=['D'])
+            save_df(new_fleet, FLEET)
+            st.rerun()
 
 # --- 4. MAIN DASHBOARD ---
 st.title("🛠️ The Garage Hub")
@@ -74,20 +77,20 @@ if not active_unit:
 
 c1, c2 = st.columns([1, 2], gap="large")
 with c1:
-    st.subheader(f"📝 New Entry: {active_unit}")
+    # Changed header as requested
+    st.subheader(f"⚙️ Working on: {active_unit}")
     with st.container(border=True):
-        l_t = st.selectbox("Activity Category", ["Oil Change", "Tire Service", "Bulbs", "Battery", "Repair", "Legal"], key=f"t_{active_unit}")
+        l_t = st.selectbox("Activity", ["Oil Change", "Tire Service", "Bulbs", "Battery", "Repair", "Legal"], key=f"t_{active_unit}")
         
         l_km = 0
         if l_t not in ["Battery", "Legal"]:
-            l_km = st.number_input("Current Mileage (KM)", min_value=0, step=1, key=f"k_{active_unit}")
+            l_km = st.number_input("Current KM", min_value=0, step=1, key=f"k_{active_unit}")
 
         o_g, o_q, o_c, o_f, pri, tra, a_f, bat, t_s, f_sz, r_sz, l_b, h_b, fog, blk, dom, ins, reg, p_p, nxt = "","","","","","","","","","", "","","","","","","","", "", 0
         l_notes = ""
 
-        # --- TIRE SERVICE ---
         if l_t == "Tire Service":
-            label = "🔧 **Standard Tire Size**" if unit_cat != "Motorcycle" else "🔧 **Front Tire Size**"
+            label = "🔧 **Tire Size**" if unit_cat != "Motorcycle" else "🔧 **Front Tire Size**"
             st.write(label)
             t_f1, t_f2, t_f3 = st.columns(3)
             fw, fa, fr = t_f1.text_input("W"), t_f2.text_input("R"), t_f3.text_input("D")
@@ -98,7 +101,6 @@ with c1:
                 rw, ra, rd = tr1.text_input("W "), tr2.text_input("R "), tr3.text_input("D ")
                 r_sz = f"{rw}/{ra}R{rd}" if rw and ra and rd else ""
 
-        # --- OIL CHANGE ---
         elif l_t == "Oil Change":
             if unit_cat == "Motorcycle":
                 st.markdown("🏍️ **Engine Oil**")
@@ -112,7 +114,6 @@ with c1:
                 o_c = o2.selectbox("Type", ["Full Synthetic", "High Mileage", "Conventional"])
             nxt = l_km + 8000
 
-        # --- REPAIR ---
         elif l_t == "Repair":
             st.write("📋 **Work Details**")
             sel_comp = st.selectbox("System", ["Engine", "Transmission", "Suspension", "Brakes", "Electrical", "Body", "Audio"])
@@ -121,20 +122,17 @@ with c1:
             edited_parts = st.data_editor(parts_data, num_rows="dynamic", use_container_width=True)
             l_notes = f"System: {sel_comp} | Action: {sel_act} | Cost: ${edited_parts['Price'].sum():.2f}"
 
-        # --- BATTERY ---
         elif l_t == "Battery":
             st.write("🔋 **Battery Specs**")
             b1, b2 = st.columns(2)
             bat = f"Size: {b1.text_input('Size')} | CCA: {b2.text_input('CCA')} | V: {b1.text_input('Volts')} | Brand: {b2.text_input('Brand')}"
 
-        # --- LEGAL ---
         elif l_t == "Legal":
             st.write("📑 **Records**")
             leg_c1, leg_c2 = st.columns(2)
             doc_type = leg_c1.selectbox("Doc", ["Registration", "Insurance", "Safety", "Permit"])
             l_notes = f"Type: {doc_type} | Ref: {leg_c2.text_input('Ref #')} | Exp: {st.date_input('Expiry')}"
 
-        # --- BULBS ---
         elif l_t == "Bulbs":
             st.write("💡 **Lighting**")
             l_c1, l_c2 = st.columns(2)
@@ -143,11 +141,11 @@ with c1:
             if unit_cat != "Motorcycle":
                 fog, dom, reg = l_c2.text_input("Fog"), l_c1.text_input("Dome"), l_c2.text_input("Plate")
 
-        extra_n = st.text_area("Observations / Notes", key=f"notes_{active_unit}")
+        extra_n = st.text_area("Notes", key=f"notes_{active_unit}")
         l_notes = f"{l_notes} | {extra_n}" if l_notes else extra_n
-        gal = st.file_uploader("Attach Photo/Receipt", type=['jpg', 'jpeg', 'png'], key=f"g_{active_unit}")
+        gal = st.file_uploader("Photo/Receipt", type=['jpg', 'jpeg', 'png'], key=f"g_{active_unit}")
         
-        if st.button("Save Entry to Log"):
+        if st.button("Save Entry"):
             if gal:
                 p_p = f"{IMG}/{active_unit.replace(' ','_')}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg"
                 Image.open(gal).save(p_p)
