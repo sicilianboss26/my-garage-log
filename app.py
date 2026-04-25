@@ -52,4 +52,167 @@ LOG, FLEET = "maintenance_log.csv", "fleet_database.csv"
 COLS = ["Date", "Vehicle", "Type", "KM", "Notes", "Oil_M", "Oil_P", "Oil_T", "F_Tire", "R_Tire", "Bulbs", "Photo"]
 
 if not os.path.exists(LOG):
-    pd.DataFrame(columns=COLS).to_csv(LOG, index
+    pd.DataFrame(columns=COLS).to_csv(LOG, index=False)
+if not os.path.exists(FLEET):
+    pd.DataFrame(columns=["Year", "Make", "Model", "Cat"]).to_csv(FLEET, index=False)
+
+# --- 4. SIDEBAR ---
+with st.sidebar:
+    st.markdown("### 🛠️ CONTROL")
+    if st.button("Log Out"):
+        st.session_state.auth = False
+        st.rerun()
+    st.divider()
+    f_df = pd.read_csv(FLEET)
+    active_v, active_cat = None, "Car/SUV"
+    if not f_df.empty:
+        f_df["Name"] = f_df["Year"].astype(str) + " " + f_df["Make"] + " " + f_df["Model"]
+        active_v = st.selectbox("SELECT VEHICLE", f_df["Name"].tolist())
+        if active_v:
+            active_cat = f_df[f_df["Name"] == active_v]["Cat"].values[0]
+        with st.expander("Delete Vehicle"):
+            if st.button("Confirm Delete"):
+                new_f = f_df[f_df["Name"] != active_v].drop(columns=["Name"])
+                new_f.to_csv(FLEET, index=False)
+                st.rerun()
+    with st.expander("Add Vehicle"):
+        y = st.selectbox("Year", range(2027, 1990, -1))
+        ma = st.text_input("Make")
+        mo = st.text_input("Model")
+        ct = st.radio("Type", ["Car/SUV", "Truck", "Motorcycle"])
+        if st.button("Save Vehicle"):
+            new_v = pd.DataFrame([{"Year": y, "Make": ma, "Model": mo, "Cat": ct}])
+            pd.concat([pd.read_csv(FLEET), new_v], ignore_index=True).to_csv(FLEET, index=False)
+            st.rerun()
+
+# --- 5. MAIN ---
+st.title("📟 ANTONINO'S GARAGE HUB")
+if not active_v:
+    st.info("Please add a vehicle to begin.")
+    st.stop()
+
+st.markdown(f'<div class="working-on">WORKING ON: {active_v.upper()}</div>', unsafe_allow_html=True)
+col1, col2 = st.columns([1.3, 2], gap="large")
+
+with col1:
+    mode = st.selectbox("CATEGORY", ["Oil Change", "Tires", "Repair", "Diagnostic", "Bulbs", "Legal File"])
+    
+    km = ""
+    if mode not in ["Bulbs", "Legal File"]:
+        km = st.text_input("ODOMETER (KM)")
+        
+    uploaded_file = st.file_uploader("📷 Attach Photo", type=['png', 'jpg', 'jpeg'])
+    photo_name = uploaded_file.name if uploaded_file else "None"
+    st.divider()
+
+    entry = {k: "" for k in COLS}
+    entry["Date"] = datetime.now().strftime("%Y-%m-%d")
+    entry["Vehicle"] = active_v
+    entry["Type"] = mode
+    entry["KM"] = km
+    entry["Photo"] = photo_name
+
+    if mode == "Oil Change":
+        if active_cat == "Motorcycle":
+            st.markdown("### Triple-Oil Service")
+            c1, c2, c3 = st.columns(3)
+            with c1: e_oil = st.text_input("Engine Oil", "20W-50")
+            with c2: p_oil = st.text_input("Primary Oil")
+            with c3: t_oil = st.text_input("Trans Oil")
+            
+            l1, l2, l3 = st.columns(3)
+            with l1: e_lit = st.text_input("E-Liters")
+            with l2: p_lit = st.text_input("P-Liters")
+            with l3: t_lit = st.text_input("T-Liters")
+            
+            entry["Oil_M"] = f"{e_oil} ({e_lit}L)"
+            entry["Oil_P"] = f"{p_oil} ({p_lit}L)"
+            entry["Oil_T"] = f"{t_oil} ({t_lit}L)"
+            
+            m_filt = st.text_input("Filter #")
+            m_notes = st.text_area("Service")
+            entry["Notes"] = f"Filter: {m_filt} | {m_notes}"
+        else:
+            o_type = st.selectbox("Oil Type", ["Full Synthetic", "Synthetic Blend", "Conventional"])
+            o_grade = st.text_input("Oil Grade")
+            o_lit = st.text_input("Liters")
+            o_filt = st.text_input("Filter #")
+            entry["Oil_M"] = f"{o_grade} ({o_type})"
+            note_content = st.text_area("Notes")
+            entry["Notes"] = f"{o_lit}L | Filter: {o_filt} | {note_content}"
+
+    elif mode == "Tires":
+        st.markdown("### Tires")
+        ft1, ft2 = st.columns([2, 1])
+        f_s = ft1.text_input("Front Size")
+        f_p = ft2.text_input("Front PSI")
+        rt1, rt2 = st.columns([2, 1])
+        r_s = rt1.text_input("Rear Size")
+        r_p = rt2.text_input("Rear PSI")
+        entry["F_Tire"] = f"{f_s} ({f_p} PSI)"
+        entry["R_Tire"] = f"{r_s} ({r_p} PSI)"
+        entry["Notes"] = st.text_area("Service")
+
+    elif mode == "Repair":
+        systems = ["Engine", "Transmission", "Electrical", "Suspension", "Brakes", "Exhaust", "Body"]
+        if active_cat == "Motorcycle":
+            systems.insert(2, "Primary/Chain/Belt")
+        else:
+            systems.insert(3, "Audio/Interior")
+        rep_cat = st.selectbox("System", systems)
+        entry["Type"] = f"Repair: {rep_cat}"
+        entry["Notes"] = st.text_area("Work Details")
+
+    elif mode == "Diagnostic":
+        st.markdown("### ⚡ Diagnostic Scan")
+        d1, d2 = st.columns(2)
+        dtc = d1.text_input("DTC")
+        abs_c = d1.text_input("ABS")
+        second_mod = "BCM" if active_cat == "Motorcycle" else "SRS"
+        mod_val = d2.text_input(second_mod)
+        oth = d2.text_input("Other/Body")
+        diag_notes = st.text_area("Notes")
+        entry["Notes"] = f"DTC:{dtc} | {second_mod}:{mod_val} | ABS:{abs_c} | Other:{oth} | {diag_notes}"
+
+    elif mode == "Bulbs":
+        st.markdown("### 💡 Lighting")
+        if active_cat == "Motorcycle":
+            b_l = st.selectbox("Location", ["Headlight", "Turn Signals", "Tail/Brake", "Dash/Instrument"])
+        else:
+            b_l = st.selectbox("Location", ["Low/High Beam", "Fog Lights", "Turn/Marker", "License Plate", "Tail/Brake", "Reverse", "Interior", "Side Marker/Custom"])
+        entry["Type"] = f"Lighting: {b_l}"
+        entry["Bulbs"] = st.text_input("Bulb Spec")
+        entry["Notes"] = st.text_area("Replacement Notes")
+
+    elif mode == "Legal File":
+        st.markdown("### 📄 Legal / Papers")
+        doc_type = st.selectbox("Document Type", ["Insurance", "Registration", "License"])
+        d_col1, d_col2 = st.columns(2)
+        if doc_type == "License":
+            pay_d = d_col1.date_input("Renewal/Payment Date")
+            exp_d = d_col2.date_input("Expiry Date")
+            entry["Notes"] = f"Renewed: {pay_d} | Expires: {exp_d}"
+        else:
+            from_d = d_col1.date_input("From Date")
+            to_d = d_col2.date_input("To Date")
+            entry["Notes"] = f"Period: {from_d} to {to_d}"
+        entry["Type"] = f"Legal: {doc_type}"
+
+    if st.button("💾 SAVE RECORD"):
+        pd.concat([pd.read_csv(LOG), pd.DataFrame([entry])], ignore_index=True).to_csv(LOG, index=False)
+        st.rerun()
+
+with col2:
+    st.subheader("📋 HISTORY")
+    h_df = pd.read_csv(LOG)
+    if not h_df.empty:
+        v_h = h_df[h_df["Vehicle"] == active_v].sort_values(by="Date", ascending=False)
+        st.dataframe(v_h, use_container_width=True, hide_index=True)
+        st.divider()
+        with st.expander("📝 Edit History"):
+            if not v_h.empty:
+                v_h['Display'] = v_h['Date'] + " - " + v_h['Type']
+                sel = st.selectbox("Select record", v_h.index, format_func=lambda x: v_h.loc[x, 'Display'])
+                if st.button("PURGE RECORD"):
+                    h_df.drop(sel).to_csv(LOG, index=False)
+                    st.rerun()
