@@ -104,27 +104,37 @@ with col1:
             pd.concat([pd.read_csv(LOG), row]).to_csv(LOG, index=False); st.rerun()
 
     elif mode == "Tires":
-        # REVISED TIRE SECTION
         st.markdown("### Front Tires")
         ft1, ft2 = st.columns([2, 1])
-        with ft1: f_size = st.text_input("Front Size", placeholder="e.g. 245/75R16")
+        with ft1: f_size = st.text_input("Front Size")
         with ft2: f_psi = st.text_input("Front PSI")
-        
         st.markdown("### Rear Tires")
         rt1, rt2 = st.columns([2, 1])
         with rt1: r_size = st.text_input("Rear Size")
         with rt2: r_psi = st.text_input("Rear PSI")
-        
-        t_notes = st.text_area("Tire Service Notes", placeholder="e.g. Rotated tires, checked tread depth")
-        
+        t_notes = st.text_area("Tire Service Notes")
         if st.button("Save Tire Service"):
             row = pd.DataFrame([[datetime.now().strftime("%Y-%m-%d"), active_v, mode, km, t_notes, "", "", "", f"{f_size} ({f_psi} PSI)", f"{r_size} ({r_psi} PSI)", "", photo_name]], columns=COLS)
             pd.concat([pd.read_csv(LOG), row]).to_csv(LOG, index=False); st.rerun()
 
     elif mode == "Repair":
-        rep_notes = st.text_area("Work Details")
+        # REVISED REPAIR SECTION WITH DROPDOWN
+        repair_cat = st.selectbox("System Involved", [
+            "Engine / Mechanical", 
+            "Transmission / Drivetrain",
+            "Electrical / Diagnostic", 
+            "Suspension / Steering", 
+            "Brakes / ABS",
+            "Exhaust / Emissions",
+            "Body / Interior",
+            "Audio / 3D Printing / Custom",
+            "General Maintenance"
+        ])
+        rep_notes = st.text_area("Work Details", placeholder="Describe the problem and the fix...")
+        
         if st.button("Save Repair"):
-            row = pd.DataFrame([[datetime.now().strftime("%Y-%m-%d"), active_v, mode, km, rep_notes, "", "", "", "", "", "", photo_name]], columns=COLS)
+            # We store the category in the "Type" column and notes in Notes
+            row = pd.DataFrame([[datetime.now().strftime("%Y-%m-%d"), active_v, f"Repair: {repair_cat}", km, rep_notes, "", "", "", "", "", "", photo_name]], columns=COLS)
             pd.concat([pd.read_csv(LOG), row]).to_csv(LOG, index=False); st.rerun()
 
     elif mode == "Admin: History Manager":
