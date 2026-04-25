@@ -16,8 +16,7 @@ st.markdown("""
     }
     .shop-title { color: #ff4b4b; font-size: 28px; font-weight: 900; text-transform: uppercase; margin: 0; }
     .stButton>button { width: 100%; background-color: #ff4b4b; color: white; font-weight: bold; height: 3.5em; border-radius: 8px; }
-    h1, h2, h3 { color: #ff4b4b !important; font-family: 'Courier New', monospace; }
-    .stMetric { background-color: #262730; padding: 15px; border-radius: 10px; border-left: 5px solid #ff4b4b; }
+    h1, h2, h3, h4 { color: #ff4b4b !important; font-family: 'Courier New', monospace; }
     div[data-baseweb="select"] { border: 1px solid #ff4b4b; border-radius: 5px; }
     </style>
     """, unsafe_allow_html=True)
@@ -83,19 +82,15 @@ if not active_v: st.info("👈 Select a vehicle to start."); st.stop()
 col1, col2 = st.columns([1.3, 2], gap="large")
 
 with col1:
-    # Top Header showing active vehicle specs
     st.markdown(f"### 🚘 {active_v}")
-    st.caption(f"Category: {active_cat}")
-    
     mode = st.selectbox("Select Service Category", ["Repair", "Oil Change", "Tires", "Bulbs"])
     st.divider()
     
     entry = {k: "" for k in COLS}
 
-    # PROFESSIONAL CAR/TRUCK LAYOUTS
     if mode == "Repair":
         st.markdown("#### 🔧 System Diagnostics & Repair")
-        entry["Notes"] = st.text_area("Log mechanical fixes, audio wiring, or electrical issues", height=200, placeholder="Example: Replaced B-pillar side impact sensor...")
+        entry["Notes"] = st.text_area("Work Performed (Mechanical, Audio, Electrical)", height=200)
 
     elif mode == "Oil Change":
         st.markdown("#### 🛢️ Fluid Service")
@@ -104,14 +99,24 @@ with col1:
             c1, c2 = st.columns(2)
             with c1: entry["Oil_P"] = st.text_input("Primary")
             with c2: entry["Oil_T"] = st.text_input("Transmission")
+            entry["Notes"] = st.text_input("Filter/Notes")
         else:
-            # Professional Vehicle Layout for Oil
+            # Professional Car/Truck Layout
             oil_col1, oil_col2 = st.columns([2, 1])
             with oil_col1:
-                entry["Oil_M"] = st.text_input("Engine Oil Grade (e.g. 5W-30 Full Synthetic)")
+                entry["Oil_M"] = st.text_input("Oil Grade (e.g. 5W-30 Synthetic)")
             with oil_col2:
-                oil_qty = st.text_input("Qty (Quarts)")
-            entry["Notes"] = st.text_input("Filter Model # / Drain Plug Torque")
+                oil_qty = st.text_input("Qty (Liters)")
+            
+            # New dedicated fields
+            st.markdown("##### Service Hardware")
+            h_col1, h_col2 = st.columns(2)
+            with h_col1:
+                filter_num = st.text_input("Filter Model #")
+            with h_col2:
+                drain_tq = st.text_input("Drain Plug Torque (lb-ft)")
+            
+            entry["Notes"] = f"Qty: {oil_qty}L | Filter: {filter_num} | Drain TQ: {drain_tq}"
 
     elif mode == "Tires":
         st.markdown("#### 🛞 Wheel & Tire Specs")
@@ -121,7 +126,6 @@ with col1:
             with cb: entry["R_Tire"] = st.text_input("Rear Size")
             entry["Notes"] = st.text_input("PSI / Torque")
         else:
-            # Side-by-side spec sheet for cars
             st.markdown("##### Front Axle")
             f_c1, f_c2 = st.columns(2)
             with f_c1: entry["F_Tire"] = st.text_input("Tire Size (Front)")
@@ -134,25 +138,22 @@ with col1:
             
             st.divider()
             tq = st.text_input("Lug Nut Torque Spec (lb-ft)")
-            entry["Notes"] = f"PSI: {f_psi}/{r_psi} | Torque: {tq}"
+            entry["Notes"] = f"PSI: {f_p if 'f_p' in locals() else f_psi}/{r_p if 'r_p' in locals() else r_psi} | Torque: {tq}"
 
     elif mode == "Bulbs":
         st.markdown("#### 💡 Lighting Specs")
-        if active_cat == "Motorcycle":
-            entry["Bulbs"] = st.selectbox("Bulb Location", ["H4 Headlight", "1157 Signal", "LED Tail"])
-        else:
-            b_c1, b_c2 = st.columns([2, 1])
-            with b_c1:
-                entry["Bulbs"] = st.selectbox("Bulb Location", ["H11 Low Beam", "9005 High Beam", "Fog Light", "Interior LED", "License Plate"])
-            with b_c2:
-                b_code = st.text_input("Bulb Code")
-        entry["Notes"] = st.text_input("Additional Lighting Notes")
+        b_c1, b_c2 = st.columns([2, 1])
+        with b_c1:
+            entry["Bulbs"] = st.selectbox("Bulb Location", ["H11 Low Beam", "9005 High Beam", "Fog Light", "Interior LED", "License Plate"])
+        with b_c2:
+            b_code = st.text_input("Bulb Code")
+        entry["Notes"] = st.text_input("Additional Notes")
 
     st.divider()
     if st.button(f"💾 COMMIT {mode.upper()} TO LOG"):
         row = pd.DataFrame([[datetime.now().strftime("%Y-%m-%d"), active_v, mode, entry["Notes"], entry["Oil_M"], entry["Oil_P"], entry["Oil_T"], entry["F_Tire"], entry["R_Tire"], entry["Bulbs"]]], columns=COLS)
         pd.concat([pd.read_csv(LOG), row]).to_csv(LOG, index=False)
-        st.success(f"Log Updated for {active_v}")
+        st.success(f"Log Updated Successfully")
         st.rerun()
 
 with col2:
