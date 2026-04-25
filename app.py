@@ -75,10 +75,8 @@ c1, c2 = st.columns([1, 2], gap="large")
 with c1:
     st.subheader(f"⚙️ Working on: {active_unit}")
     with st.container(border=True):
-        # ALL CATEGORIES RESTORED
         l_t = st.selectbox("Activity", ["Repair", "Oil Change", "Tire Service", "Battery", "Bulbs", "Legal"], key=f"t_{active_unit}")
         
-        # KM required for major services only
         l_km = 0
         if l_t not in ["Battery", "Bulbs", "Legal"]:
             l_km = st.number_input("Current KM", min_value=0, step=1, key=f"k_{active_unit}")
@@ -147,7 +145,6 @@ with c2:
         u_h = hist[hist["Unit"] == active_unit].sort_values("Date", ascending=False)
         
         with tab1:
-            # Full history visible here
             st.dataframe(u_h[["Date", "Type", "KM", "Notes"]], use_container_width=True, hide_index=True)
             if st.toggle("🔓 Edit Entries"):
                 edited_df = st.data_editor(u_h, use_container_width=True, hide_index=True)
@@ -156,11 +153,26 @@ with c2:
                     st.rerun()
 
         with tab2:
-            st.subheader("Major Maintenance Costs")
-            # Only track the "Big 4" in the Expense Tracker
+            st.subheader("Investment Summaries")
+            
+            # --- Categorized Totals ---
             finance_df = u_h[u_h["Type"].isin(["Repair", "Oil Change", "Tire Service", "Battery"])]
-            total_spent = finance_df["Cost"].sum()
-            st.metric("Total Investment", f"${total_spent:,.2f}")
+            
+            mc1, mc2, mc3, mc4 = st.columns(4)
+            
+            # Filter totals by category
+            repair_tot = finance_df[finance_df["Type"] == "Repair"]["Cost"].sum()
+            oil_tot = finance_df[finance_df["Type"] == "Oil Change"]["Cost"].sum()
+            tire_tot = finance_df[finance_df["Type"] == "Tire Service"]["Cost"].sum()
+            bat_tot = finance_df[finance_df["Type"] == "Battery"]["Cost"].sum()
+            
+            mc1.metric("Repairs", f"${repair_tot:,.2f}")
+            mc2.metric("Oil", f"${oil_tot:,.2f}")
+            mc3.metric("Tires", f"${tire_tot:,.2f}")
+            mc4.metric("Battery", f"${bat_tot:,.2f}")
+            
+            st.divider()
+            st.metric("Total Overall Investment", f"${finance_df['Cost'].sum():,.2f}")
             
             st.dataframe(
                 finance_df[["Date", "Type", "Cost", "Notes"]].style.format({"Cost": "${:,.2f}"}),
