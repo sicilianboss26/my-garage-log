@@ -87,8 +87,7 @@ with c1:
             l_km = st.number_input("Current KM", min_value=0, step=1, key=f"k_{active_unit}")
         
         o_g, o_f, pri, tra, bat, f_sz, r_sz, l_b, h_b, nxt = "", "", "", "", "", "", "", "", "", 0
-        l_cost = 0.0
-        l_notes = ""
+        l_cost, l_notes = 0.0, ""
 
         if l_t == "Repair":
             st.write(f"📋 **{sel_comp} Details**")
@@ -107,8 +106,12 @@ with c1:
             nxt = l_km + 8000
 
         elif l_t == "Tire Service":
-            t_f1, t_f2, t_f3 = st.columns(3)
-            f_sz = f"{t_f1.text_input('W')}/{t_f2.text_input('R')}R{t_f3.text_input('D')}"
+            st.write("🛞 **Front Tires**")
+            tf1, tf2, tf3 = st.columns(3)
+            f_sz = f"{tf1.text_input('W', key='fw')}/{tf2.text_input('R', key='fr')}R{tf3.text_input('D', key='fd')}"
+            st.write("🛞 **Rear Tires**")
+            tr1, tr2, tr3 = st.columns(3)
+            r_sz = f"{tr1.text_input('W', key='rw')}/{tr2.text_input('R', key='rr')}R{tr3.text_input('D', key='rd')}"
             l_cost = st.number_input("Service Cost", min_value=0.0, step=0.01)
 
         elif l_t == "Battery":
@@ -119,10 +122,15 @@ with c1:
             bat = f"{brand} | Group: {group} | CCA: {cca}"
 
         elif l_t == "Bulbs":
-            st.write("💡 **Lighting**")
+            st.write("🔦 **Front Lighting**")
             b_c1, b_c2 = st.columns(2)
             l_b, h_b = b_c1.text_input("Low Beam Spec"), b_c2.text_input("High Beam Spec")
+            st.write("🚨 **Rear Lighting**")
+            b_c3, b_c4 = st.columns(2)
+            # We use these fields to store Brake and Signal for the log
+            brake, signal = b_c3.text_input("Brake Light"), b_c4.text_input("Signal Light")
             l_cost = st.number_input("Cost", min_value=0.0, step=0.01)
+            l_notes = f"Brake: {brake} | Signal: {signal}"
 
         elif l_t == "Legal":
             st.write("📑 **Legal/Papers**")
