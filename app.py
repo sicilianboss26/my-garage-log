@@ -60,31 +60,35 @@ with c1:
         o_g, o_q, o_c, o_f, pri, tra, a_f, bat, t_s, f_sz, r_sz, l_b, h_b, fog, blk, dom, ins, reg, p_p, nxt = "","","","","","","","","","", "","","","","","","","", "", 0
         l_notes = ""
 
-        # --- OIL CHANGE (RESTORED MOTORCYCLE LOGIC) ---
-        if l_t == "Oil Change":
+        # --- TIRE SERVICE (RESTORED REAR TIRE) ---
+        if l_t == "Tire Service":
+            st.write("🔧 **Front Tire Size**")
+            t_f1, t_f2, t_f3 = st.columns(3)
+            fw, fa, fr = t_f1.text_input("W"), t_f2.text_input("R"), t_f3.text_input("D")
+            f_sz = f"{fw}/{fa}R{fr}" if fw and fa and fr else ""
+            
+            if unit_cat == "Motorcycle":
+                st.write("🏍️ **Rear Tire Size**")
+                tr1, tr2, tr3 = st.columns(3)
+                rw, ra, rd = tr1.text_input("W "), tr2.text_input("R "), tr3.text_input("D ")
+                r_sz = f"{rw}/{ra}R{rd}" if rw and ra and rd else ""
+
+        # --- OIL CHANGE ---
+        elif l_t == "Oil Change":
             if unit_cat == "Motorcycle":
                 st.markdown("🏍️ **Engine Oil**")
                 m1, m2 = st.columns(2)
-                o_g = m1.text_input("Grade (e.g. 20W50)")
-                o_f = m2.text_input("Filter #")
+                o_g, o_f = m1.text_input("Grade"), m2.text_input("Filter #")
                 o_c = st.selectbox("Type", ["Synthetic", "V-Twin Blend", "Mineral"])
-                
                 st.markdown("⚙️ **Drivetrain**")
                 m3, m4 = st.columns(2)
-                pri = m3.text_input("Primary Oil")
-                tra = m4.text_input("Transmission Oil")
+                pri, tra = m3.text_input("Primary Oil"), m4.text_input("Transmission Oil")
             else:
                 o1, o2 = st.columns(2)
                 o_g = o1.text_input("Grade")
                 o_c = o2.selectbox("Type", ["Full Synthetic", "High Mileage", "Conventional"])
                 o_f = st.text_input("Filter #")
             nxt = l_km + 8000
-
-        # --- BATTERY ---
-        elif l_t == "Battery":
-            st.write("🔋 **Electrical Specs**")
-            b1, b2 = st.columns(2)
-            bat = f"Size: {b1.text_input('Size')} | CCA: {b2.text_input('CCA')} | Volts: {b1.text_input('Volts')} | Brand: {b2.text_input('Brand')}"
 
         # --- REPAIR ---
         elif l_t == "Repair":
@@ -95,7 +99,13 @@ with c1:
             edited_parts = st.data_editor(parts_data, num_rows="dynamic", use_container_width=True)
             total_cost = edited_parts["Price"].sum()
             st.metric("Total Cost", f"${total_cost:,.2f}")
-            l_notes = f"System: {sel_comp} | Action: {sel_act} | Total: ${total_cost:.2f}"
+            l_notes = f"System: {sel_comp} | Action: {sel_act} | Cost: ${total_cost:.2f}"
+
+        # --- BATTERY ---
+        elif l_t == "Battery":
+            st.write("🔋 **Electrical Specs**")
+            b1, b2 = st.columns(2)
+            bat = f"Size: {b1.text_input('Size')} | CCA: {b2.text_input('CCA')} | Volts: {b1.text_input('Volts')} | Brand: {b2.text_input('Brand')}"
 
         # --- LEGAL ---
         elif l_t == "Legal":
@@ -115,14 +125,7 @@ with c1:
             if unit_cat != "Motorcycle":
                 fog, dom, reg = l_c2.text_input("Fog"), l_c1.text_input("Dome"), l_c2.text_input("License Plate")
 
-        # --- TIRE SERVICE ---
-        elif l_t == "Tire Service":
-            st.write("🔧 **Front Tire**")
-            t_f1, t_f2, t_f3 = st.columns(3)
-            fw, fa, fr = t_f1.text_input("W"), t_f2.text_input("R"), t_f3.text_input("D")
-            f_sz = f"{fw}/{fa}R{fr}" if fw and fa and fr else ""
-
-        # Uniform Notes
+        # Standard Notes
         extra_notes = st.text_area("Notes", key=f"notes_{active_unit}")
         if l_notes: l_notes += f" | {extra_notes}"
         else: l_notes = extra_notes
