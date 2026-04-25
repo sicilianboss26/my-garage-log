@@ -53,17 +53,15 @@ with c1:
     with st.container(border=True):
         l_t = st.selectbox("Activity", ["Oil Change", "Tire Service", "Bulbs", "Battery", "Repair", "Legal"], key=f"t_{active_unit}")
         
-        # KM logic
+        # KM logic - purely functional, no extra messages
         l_km = 0
         if l_t != "Legal":
             l_km = st.number_input("Current KM", min_value=0, step=1, key=f"k_{active_unit}")
-        else:
-            st.info("📂 Administrative Log: Mileage not required.")
 
         o_g, o_q, o_c, o_f, pri, tra, a_f, bat, t_s, f_sz, r_sz, l_b, h_b, fog, blk, dom, ins, reg, p_p, nxt = "","","","","","","","","","", "","","","","","","","", "", 0
         l_notes = ""
 
-        # --- LEGAL CATEGORY (STREAMLINED) ---
+        # --- LEGAL CATEGORY ---
         if l_t == "Legal":
             st.write("📑 **Compliance Tracking**")
             leg_c1, leg_c2 = st.columns(2)
@@ -127,8 +125,7 @@ with c1:
                 o_f = st.text_input("Filter #")
             nxt = l_km + 8000
 
-        # Optional detail for Repairs/Tires/Oil etc. 
-        # (Self-hiding for Legal unless you want to keep a generic notes box)
+        # Generic observations box for all non-Legal categories
         if l_t != "Legal":
             extra_notes = st.text_area("Final Observations", key=f"ex_{active_unit}")
             if l_notes: l_notes += f" | Obs: {extra_notes}"
