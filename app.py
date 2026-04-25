@@ -63,7 +63,7 @@ if not st.session_state.authenticated:
         st.markdown('<div class="login-card">', unsafe_allow_html=True)
         st.markdown('<div class="shop-title">Antonino\'s</div>', unsafe_allow_html=True)
         st.markdown('<div class="shop-title" style="font-size: 36px;">Garage Hub</div>', unsafe_allow_html=True)
-        st.markdown('<div class="shop-subtitle">SECURE SYSTEM ENTRY | V3.1</div>', unsafe_allow_html=True)
+        st.markdown('<div class="shop-subtitle">SECURE SYSTEM ENTRY | V3.2</div>', unsafe_allow_html=True)
         
         input_pin = st.text_input("Enter Shop PIN", type="password", placeholder="****")
         
@@ -83,7 +83,7 @@ COLS = ["Date", "Unit", "Type", "Cost", "KM", "Next_KM", "Notes", "Photo", "Oil_
 if not os.path.exists(LOG): pd.DataFrame(columns=COLS).to_csv(LOG, index=False)
 if not os.path.exists(FLEET): pd.DataFrame(columns=["Year", "Make", "Model", "Category"]).to_csv(FLEET, index=False)
 
-# --- 4. SIDEBAR (Vehicle Management) ---
+# --- 4. SIDEBAR ---
 with st.sidebar:
     st.markdown("### 🔧 Shop Control")
     if st.button("🔒 Lock App"):
@@ -98,7 +98,6 @@ with st.sidebar:
         fleet_df["D"] = fleet_df["Year"].astype(str) + " " + fleet_df["Make"] + " " + fleet_df["Model"]
         active_unit = st.selectbox("Select Active Vehicle", fleet_df["D"].tolist())
 
-        # Restored Removal Function
         with st.expander("🗑️ Remove a Vehicle"):
             to_remove = st.selectbox("Vehicle to Delete", fleet_df["D"].tolist(), key="del_box")
             if st.button("Confirm Delete", type="primary"):
