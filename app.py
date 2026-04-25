@@ -62,7 +62,8 @@ with st.sidebar.expander("➕ Add New Vehicle"):
     vma, vmo = st.text_input("Make"), st.text_input("Model")
     vct = st.radio("Category", ["Car", "Truck", "Motorcycle"])
     if st.button("Save Vehicle") and vma and vmo:
-        save_df(pd.concat([get_df(FLEET), pd.DataFrame([{"Year":vy,"Make":vma,"Model":vmo,"Category":vct}])]), FLEET)
+        new_v = pd.DataFrame([{"Year":vy,"Make":vma,"Model":vmo,"Category":vct}])
+        save_df(pd.concat([get_df(FLEET), new_v]), FLEET)
         st.rerun()
 
 # --- 4. MAIN DASHBOARD ---
@@ -81,7 +82,6 @@ with c1:
         if l_t == "Repair":
             sel_comp = st.selectbox("System", ["Engine", "Transmission", "Suspension", "Brakes", "Electrical", "Body", "Audio"])
 
-        # KM logic: Hidden for Battery, Bulbs, Legal, Audio, and Body
         l_km = 0
         if l_t not in ["Battery", "Bulbs", "Legal"] and sel_comp not in ["Audio", "Body"]:
             l_km = st.number_input("Current KM", min_value=0, step=1, key=f"k_{active_unit}")
@@ -92,14 +92,4 @@ with c1:
 
         if l_t == "Repair":
             st.write(f"📋 **{sel_comp} Details**")
-            parts_data = pd.DataFrame([{"Part": "", "Price": 0.00}])
-            edited_parts = st.data_editor(parts_data, num_rows="dynamic", use_container_width=True)
-            l_cost = float(edited_parts["Price"].sum())
-            st.metric("Final Cost", f"${l_cost:,.2f}")
-            l_notes = f"{sel_comp} Repair"
-
-        elif l_t == "Oil Change":
-            m1, m2 = st.columns(2); o_g, o_f = m1.text_input("Grade"), m2.text_input("Filter #")
-            if unit_cat == "Motorcycle":
-                m3, m4 = st.columns(2); pri, tra = m3.text_input("Primary"), m4.text_input("Trans")
-            l_cost = st.number_input("
+            parts_data = pd.DataFrame([{"Part": "", "Price": 0
