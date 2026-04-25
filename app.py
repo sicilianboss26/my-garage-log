@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime
 import os
+import shutil
 
 # --- 1. SETUP & CUSTOM THEME ---
 st.set_page_config(page_title="The Garage Hub", page_icon="🔧", layout="wide")
@@ -62,7 +63,7 @@ if not st.session_state.authenticated:
         st.markdown('<div class="login-card">', unsafe_allow_html=True)
         st.markdown('<div class="shop-title">Antonino\'s</div>', unsafe_allow_html=True)
         st.markdown('<div class="shop-title" style="font-size: 36px;">Garage Hub</div>', unsafe_allow_html=True)
-        st.markdown('<div class="shop-subtitle">SECURE SYSTEM ENTRY | V3.6</div>', unsafe_allow_html=True)
+        st.markdown('<div class="shop-subtitle">SECURE SYSTEM ENTRY | V3.7</div>', unsafe_allow_html=True)
         
         input_pin = st.text_input("Enter Shop PIN", type="password", placeholder="****")
         
@@ -75,9 +76,13 @@ if not st.session_state.authenticated:
         st.markdown('</div>', unsafe_allow_html=True)
     st.stop()
 
-# --- 3. DATA PERSISTENCE ---
-LOG, FLEET = "maintenance_log.csv", "fleet_database.csv"
-COLS = ["Date", "Unit", "Type", "Cost", "KM", "Next_KM", "Notes", "Photo", "Oil_G", "Oil_F", "Primary_Oil", "Trans_Oil", "Batt", "F_Tire", "R_Tire", "Low_B", "High_B"]
+# --- 3. DATA & STORAGE ---
+LOG, FLEET, STL_DIR = "maintenance_log.csv", "fleet_database.csv", "stl_library"
+COLS = ["Date", "Unit", "Type", "Cost", "KM", "Next_KM", "Notes", "STL_File", "Oil_G", "Oil_F", "Primary_Oil", "Trans_Oil", "Batt", "F_Tire", "R_Tire", "Low_B", "High_B"]
+
+# Ensure directories exist
+for d in [STL_DIR]:
+    if not os.path.exists(d): os.makedirs(d)
 
 if not os.path.exists(LOG): pd.DataFrame(columns=COLS).to_csv(LOG, index=False)
 if not os.path.exists(FLEET): pd.DataFrame(columns=["Year", "Make", "Model", "Category"]).to_csv(FLEET, index=False)
@@ -85,89 +90,4 @@ if not os.path.exists(FLEET): pd.DataFrame(columns=["Year", "Make", "Model", "Ca
 # --- 4. SIDEBAR ---
 with st.sidebar:
     st.markdown("### 🔧 Shop Control")
-    if st.button("🔒 Lock App"):
-        st.session_state.authenticated = False
-        st.rerun()
-    st.divider()
-    
-    fleet_df = pd.read_csv(FLEET)
-    active_unit = None
-    
-    if not fleet_df.empty:
-        fleet_df["D"] = fleet_df["Year"].astype(str) + " " + fleet_df["Make"] + " " + fleet_df["Model"]
-        active_unit = st.selectbox("Select Active Vehicle", fleet_df["D"].tolist())
-
-        with st.expander("🗑️ Remove a Vehicle"):
-            to_remove = st.selectbox("Vehicle to Delete", fleet_df["D"].tolist(), key="del_box")
-            if st.button("Confirm Delete", type="primary"):
-                updated = fleet_df[fleet_df["D"] != to_remove].drop(columns=['D'])
-                updated.to_csv(FLEET, index=False)
-                st.success(f"Removed {to_remove}")
-                st.rerun()
-
-    with st.expander("➕ Add New Vehicle"):
-        vy = st.selectbox("Year", range(2027, 1980, -1))
-        vma = st.text_input("Make")
-        vmo = st.text_input("Model")
-        vct = st.radio("Category", ["Car/SUV", "Truck", "Motorcycle", "E-Bike"]) 
-        if st.button("Save Vehicle"):
-            if vma and vmo:
-                new_v = pd.DataFrame([{"Year": vy, "Make": vma, "Model": vmo, "Category": vct}])
-                pd.concat([pd.read_csv(FLEET), new_v]).to_csv(FLEET, index=False)
-                st.rerun()
-
-# --- 5. MAIN DASHBOARD ---
-st.title("🛠️ The Garage Hub")
-if not active_unit:
-    st.info("👈 Use the sidebar to add a vehicle and begin."); st.stop()
-
-c1, c2 = st.columns([1, 2], gap="large")
-
-with c1:
-    st.subheader(f"⚙️ Active: {active_unit}")
-    with st.container(border=True):
-        # Updated Activity List: Renamed 3D and Moved Audio into repair context
-        l_t = st.selectbox("Activity", [
-            "Repair (Mechanical/Audio)", 
-            "Oil Change", 
-            "Diagnostic", 
-            "Battery Service", 
-            "Tire Service", 
-            "3D Printed Part", 
-            "Legal"
-        ])
-        
-        entry_details = {} # Store technical info here
-        
-        if l_t == "Legal":
-            entry_details['doc'] = st.selectbox("Doc Type", ["Insurance", "Registration", "License"])
-            entry_details['notes'] = st.text_area("Notes")
-        elif l_t == "3D Printed Part":
-            entry_details['part'] = st.text_input("Part Name")
-            entry_details['material'] = st.selectbox("Material", ["ASA", "Carbon Fiber", "PETG", "PLA"])
-            entry_details['notes'] = st.text_area("Notes")
-        else:
-            # Main Repair/Diagnostic view
-            entry_details['notes'] = st.text_area("Work Performed (Repairs, Wiring, Audio Settings)")
-
-        if st.button("💾 Save Entry"):
-            # Combine details into the notes field for the CSV
-            final_note = f"{entry_details.get('part', '')} ({entry_details.get('material', '')}) {entry_details.get('notes', '')}".strip()
-            
-            new_row = pd.DataFrame([[
-                datetime.now().strftime("%Y-%m-%d"), 
-                active_unit, 
-                l_t, 0, 0, 0, 
-                final_note, 
-                "", "", "", "", "", "", "", "", "", ""
-            ]], columns=COLS)
-            
-            pd.concat([pd.read_csv(LOG), new_row]).to_csv(LOG, index=False)
-            st.success("Log Saved to Garage Records!")
-            st.rerun()
-
-with c2:
-    st.subheader("📊 Service History")
-    hist = pd.read_csv(LOG)
-    if not hist.empty:
-        st.dataframe(hist[hist["Unit"] == active_unit], use_container_width=True, hide_index=True)
+    if st.
