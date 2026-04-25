@@ -79,7 +79,7 @@ st.markdown(f'<div class="working-on">WORKING ON: {active_v.upper()}</div>', uns
 col1, col2 = st.columns([1.3, 2], gap="large")
 
 with col1:
-    mode = st.selectbox("CATEGORY", ["Oil Change", "Tires", "Repair", "Bulbs", "Legal File", "Admin: History Manager"])
+    mode = st.selectbox("CATEGORY", ["Oil Change", "Tires", "Repair", "Diagnostic", "Bulbs", "Legal File"])
     km = st.text_input("ODOMETER (KM)")
     uploaded_file = st.file_uploader("📷 Attach Photo or Receipt", type=['png', 'jpg', 'jpeg'])
     photo_name = uploaded_file.name if uploaded_file else "None"
@@ -118,35 +118,46 @@ with col1:
             pd.concat([pd.read_csv(LOG), row]).to_csv(LOG, index=False); st.rerun()
 
     elif mode == "Repair":
-        # REVISED REPAIR SECTION WITH YOUR NEW CATEGORY
-        repair_cat = st.selectbox("System Involved", [
-            "Engine / Mechanical", 
-            "Transmission / Drivetrain",
-            "Electrical / Electronics",  # Combined Electronics here
-            "Audio / Custom",             # Cleaned up Audio/Custom here
-            "Suspension / Steering", 
-            "Brakes / ABS",
-            "Exhaust / Emissions",
-            "Body / Interior",
-            "General Maintenance"
-        ])
+        repair_cat = st.selectbox("System Involved", ["Engine / Mechanical", "Transmission", "Electrical / Electronics", "Audio / Custom", "Suspension", "Brakes / ABS", "Exhaust", "Body / Interior"])
         rep_notes = st.text_area("Work Details")
-        
         if st.button("Save Repair"):
             row = pd.DataFrame([[datetime.now().strftime("%Y-%m-%d"), active_v, f"Repair: {repair_cat}", km, rep_notes, "", "", "", "", "", "", photo_name]], columns=COLS)
             pd.concat([pd.read_csv(LOG), row]).to_csv(LOG, index=False); st.rerun()
 
-    elif mode == "Admin: History Manager":
-        full_log = pd.read_csv(LOG)
-        unit_rows = full_log[full_log["Vehicle"] == active_v]
-        if not unit_rows.empty:
-            unit_rows['Display'] = unit_rows['Date'] + " - " + unit_rows['Type']
-            target = st.selectbox("Select Record to Remove", unit_rows.index, format_func=lambda x: unit_rows.loc[x, 'Display'])
-            if st.button("Delete Record"):
-                full_log.drop(target).to_csv(LOG, index=False); st.success("Record Deleted"); st.rerun()
+    elif mode == "Diagnostic":
+        # NEW PROFESSIONAL DIAGNOSTIC SCANNER FIELDS
+        st.markdown("### ⚡ Diagnostic Scan Report")
+        d1, d2 = st.columns(2)
+        with d1: 
+            dtc = st.text_input("DTC Codes", placeholder="e.g. P0300, P0420")
+            abs_c = st.text_input("ABS Codes")
+        with d2:
+            srs = st.text_input("SRS Codes", placeholder="e.g. B0088:05")
+            other = st.text_input("Body/Other Codes")
+        
+        diag_notes = st.text_area("Live Data / Symptom Notes")
+        if st.button("Log Diagnostic Report"):
+            summary = f"DTC: {dtc} | SRS: {srs} | ABS: {abs_c} | {diag_notes}"
+            row = pd.DataFrame([[datetime.now().strftime("%Y-%m-%d"), active_v, "Diagnostic Scan", km, summary, "", "", "", "", "", "", photo_name]], columns=COLS)
+            pd.concat([pd.read_csv(LOG), row]).to_csv(LOG, index=False); st.rerun()
 
 with col2:
     st.subheader("📋 HISTORY")
     hist_df = pd.read_csv(LOG)
     if not hist_df.empty:
-        st.dataframe(hist_df[hist_df["Vehicle"] == active_v].sort_values(by="Date", ascending=False), use_container_width=True, hide_index=True)
+        # Filter for current vehicle
+        v_hist = hist_df[hist_df["Vehicle"] == active_v].sort_values(by="Date", ascending=False)
+        st.dataframe(v_hist, use_container_width=True, hide_index=True)
+        
+        # INTEGRATED EDIT MODE
+        st.divider()
+        with st.expander("📝 Edit Mode (Modify History)"):
+            if not v_hist.empty:
+                v_hist['Display'] = v_hist['Date'] + " - " + v_hist['Type']
+                target = st.selectbox("Select Record to Remove", v_hist.index, format_func=lambda x: v_hist.loc[x, 'Display'])
+                if st.button("🗑️ DELETE SELECTED RECORD"):
+                    hist_df.drop(target).to_csv(LOG, index=False)
+                    st.success("Record purged.")
+                    st.rerun()
+            else:
+                st.info("No records found for this vehicle.")
