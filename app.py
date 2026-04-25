@@ -28,7 +28,7 @@ st.markdown("""
     """, unsafe_allow_html=True)
 
 with st.sidebar:
-    st.title("🔧 Enzo's Shop")
+    st.title("🔧 Antonino's Shop")
     pin = st.text_input("Access Pin", type="password")
 if pin != "1234":
     st.info("Awaiting secure pin..."); st.stop()
@@ -77,14 +77,13 @@ with c1:
     with st.container(border=True):
         l_t = st.selectbox("Activity", ["Repair", "Oil Change", "Tire Service", "Battery", "Bulbs", "Legal"], key=f"t_{active_unit}")
         
-        # Audio specific logic
         sel_comp = "None"
         if l_t == "Repair":
             sel_comp = st.selectbox("System", ["Engine", "Transmission", "Suspension", "Brakes", "Electrical", "Body", "Audio"])
 
-        # KM Hide Logic: Hide for Battery, Bulbs, Legal, OR Audio Repairs
+        # KM logic: Hidden for Battery, Bulbs, Legal, Audio Repairs, AND Body Repairs
         l_km = 0
-        if l_t not in ["Battery", "Bulbs", "Legal"] and sel_comp != "Audio":
+        if l_t not in ["Battery", "Bulbs", "Legal"] and sel_comp not in ["Audio", "Body"]:
             l_km = st.number_input("Current KM", min_value=0, step=1, key=f"k_{active_unit}")
         
         o_g, o_f, pri, tra, bat, f_sz, r_sz, l_b, h_b, nxt = "", "", "", "", "", "", "", "", "", 0
@@ -114,8 +113,11 @@ with c1:
         elif l_t == "Battery":
             st.write("🔋 **Battery Specs**")
             b1, b2 = st.columns(2)
-            bat = f"{b1.text_input('Brand')} | Size: {b2.text_input('Size')} | CCA: {b1.text_input('CCA')}"
+            # Simplified Battery Inputs
+            brand = b1.text_input("Brand/Model")
+            cca = b2.text_input("CCA")
             l_cost = st.number_input("Battery Cost", min_value=0.0, step=0.01)
+            bat = f"{brand} (CCA: {cca})"
 
         elif l_t == "Bulbs":
             st.write("💡 **Lighting**")
