@@ -64,14 +64,16 @@ with st.sidebar.expander("➕ Add New Vehicle"):
         save_df(pd.concat([get_df(FLEET), pd.DataFrame([{"Year":vy,"Make":vma,"Model":vmo,"Category":vct}])]), FLEET)
         st.rerun()
 
-# Moved Delete functionality here
+# Safety Lock Delete
 if active_unit:
     with st.sidebar.expander("🗑️ Delete Selected Vehicle"):
-        st.warning(f"This will remove {active_unit} from the fleet database.")
-        if st.button("Confirm Permanent Delete"):
-            new_fleet = fleet_df[fleet_df["D"] != active_unit].drop(columns=['D'])
-            save_df(new_fleet, FLEET)
-            st.rerun()
+        st.error(f"DANGER: Delete {active_unit}?")
+        confirm_check = st.checkbox("I am sure I want to delete this vehicle.")
+        if confirm_check:
+            if st.button("Confirm Permanent Delete"):
+                new_fleet = fleet_df[fleet_df["D"] != active_unit].drop(columns=['D'])
+                save_df(new_fleet, FLEET)
+                st.rerun()
 
 # --- 4. MAIN DASHBOARD ---
 st.title("🛠️ The Garage Hub")
