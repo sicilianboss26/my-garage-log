@@ -49,6 +49,13 @@ def save_df(df, f): df.to_csv(f, index=False)
 fleet_df = get_df(FLEET)
 active_unit, unit_cat = None, "Car"
 
+if not fleet_df.empty:
+    fleet_df["D"] = fleet_df["Year"].astype(str) + " " + fleet_df["Make"] + " " + fleet_df["Model"]
+    active_unit = st.sidebar.selectbox("Select Active Vehicle", fleet_df["D"].tolist())
+    unit_cat = fleet_df[fleet_df["D"] == active_unit]["Category"].values[0]
+
+st.sidebar.markdown("---")
+
 with st.sidebar.expander("➕ Add New Vehicle"):
     vy = st.selectbox("Year", range(2027, 1980, -1))
     vma, vmo = st.text_input("Make"), st.text_input("Model")
@@ -57,15 +64,11 @@ with st.sidebar.expander("➕ Add New Vehicle"):
         save_df(pd.concat([get_df(FLEET), pd.DataFrame([{"Year":vy,"Make":vma,"Model":vmo,"Category":vct}])]), FLEET)
         st.rerun()
 
-if not fleet_df.empty:
-    fleet_df["D"] = fleet_df["Year"].astype(str) + " " + fleet_df["Make"] + " " + fleet_df["Model"]
-    active_unit = st.sidebar.selectbox("Select Active Vehicle", fleet_df["D"].tolist())
-    unit_cat = fleet_df[fleet_df["D"] == active_unit]["Category"].values[0]
-    
-    # DELETE VEHICLE LOGIC
-    with st.sidebar.expander("🗑️ Delete Current Vehicle"):
-        st.warning(f"Remove {active_unit} from fleet?")
-        if st.button("Confirm Delete"):
+# Moved Delete functionality here
+if active_unit:
+    with st.sidebar.expander("🗑️ Delete Selected Vehicle"):
+        st.warning(f"This will remove {active_unit} from the fleet database.")
+        if st.button("Confirm Permanent Delete"):
             new_fleet = fleet_df[fleet_df["D"] != active_unit].drop(columns=['D'])
             save_df(new_fleet, FLEET)
             st.rerun()
@@ -77,7 +80,6 @@ if not active_unit:
 
 c1, c2 = st.columns([1, 2], gap="large")
 with c1:
-    # Changed header as requested
     st.subheader(f"⚙️ Working on: {active_unit}")
     with st.container(border=True):
         l_t = st.selectbox("Activity", ["Oil Change", "Tire Service", "Bulbs", "Battery", "Repair", "Legal"], key=f"t_{active_unit}")
