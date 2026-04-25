@@ -95,28 +95,29 @@ with col1:
     elif mode == "Oil Change":
         st.markdown("#### 🛢️ Fluid Service")
         if active_cat == "Motorcycle":
-            entry["Oil_M"] = st.text_input("Engine Oil")
+            entry["Oil_M"] = st.text_input("Engine Oil Grade")
             c1, c2 = st.columns(2)
-            with c1: entry["Oil_P"] = st.text_input("Primary")
-            with c2: entry["Oil_T"] = st.text_input("Transmission")
+            with c1: entry["Oil_P"] = st.text_input("Primary Oil")
+            with c2: entry["Oil_T"] = st.text_input("Trans Oil")
             entry["Notes"] = st.text_input("Filter/Notes")
         else:
             # Professional Car/Truck Layout
+            st.markdown("##### Oil Specifications")
             oil_col1, oil_col2 = st.columns([2, 1])
             with oil_col1:
-                entry["Oil_M"] = st.text_input("Oil Grade (e.g. 5W-30 Synthetic)")
+                entry["Oil_M"] = st.text_input("Grade (e.g. 5W-30)")
             with oil_col2:
-                oil_qty = st.text_input("Qty (Liters)")
+                oil_qty = st.text_input("Liters")
             
-            # New dedicated fields
-            st.markdown("##### Service Hardware")
-            h_col1, h_col2 = st.columns(2)
-            with h_col1:
+            # New Dropdown for Oil Type
+            st.markdown("##### Fluid Properties")
+            oil_type_col, filter_col = st.columns(2)
+            with oil_type_col:
+                oil_type = st.selectbox("Oil Type", ["Full Synthetic", "Synthetic Blend", "Conventional/Mineral", "High Mileage"])
+            with filter_col:
                 filter_num = st.text_input("Filter Model #")
-            with h_col2:
-                drain_tq = st.text_input("Drain Plug Torque (lb-ft)")
             
-            entry["Notes"] = f"Qty: {oil_qty}L | Filter: {filter_num} | Drain TQ: {drain_tq}"
+            entry["Notes"] = f"Type: {oil_type} | Qty: {oil_qty}L | Filter: {filter_num}"
 
     elif mode == "Tires":
         st.markdown("#### 🛞 Wheel & Tire Specs")
@@ -138,7 +139,7 @@ with col1:
             
             st.divider()
             tq = st.text_input("Lug Nut Torque Spec (lb-ft)")
-            entry["Notes"] = f"PSI: {f_p if 'f_p' in locals() else f_psi}/{r_p if 'r_p' in locals() else r_psi} | Torque: {tq}"
+            entry["Notes"] = f"PSI: {f_psi}/{r_psi} | Torque: {tq}"
 
     elif mode == "Bulbs":
         st.markdown("#### 💡 Lighting Specs")
