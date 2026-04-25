@@ -60,7 +60,7 @@ with c1:
         o_g, o_q, o_c, o_f, pri, tra, a_f, bat, t_s, f_sz, r_sz, l_b, h_b, fog, blk, dom, ins, reg, p_p, nxt = "","","","","","","","","","", "","","","","","","","", "", 0
         l_notes = ""
 
-        # --- OIL CHANGE (UPDATED TYPES) ---
+        # --- OIL CHANGE ---
         if l_t == "Oil Change":
             if unit_cat == "Motorcycle":
                 st.markdown("🏍️ **Engine Oil**")
@@ -129,4 +129,27 @@ with c1:
         if l_notes: l_notes += f" | {extra_notes}"
         else: l_notes = extra_notes
         
-        gal = st.file_uploader("Upload Image
+        # --- FIXED LINE 132 ---
+        gal = st.file_uploader("Upload Image", type=['jpg', 'jpeg', 'png'], key=f"g_{active_unit}")
+        
+        if st.button("Commit to Log"):
+            if gal:
+                p_p = f"{IMG}/{active_unit.replace(' ','_')}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg"
+                Image.open(gal).save(p_p)
+            save_df(pd.concat([get_df(LOG), pd.DataFrame([[datetime.now().strftime("%Y-%m-%d"), active_unit, l_km, nxt, l_t, "", o_g, o_q, o_c, o_f, pri, tra, a_f, bat, t_s, f_sz, r_sz, l_b, h_b, fog, blk, dom, str(ins), str(reg), p_p, l_notes]], columns=COLS)]), LOG); st.rerun()
+
+with c2:
+    st.subheader(f"📊 History")
+    hist = get_df(LOG)
+    if not hist.empty:
+        u_h = hist[hist["Unit"] == active_unit].sort_values("Date", ascending=False)
+        edit_mode = st.toggle("🔓 Unlock Edit Mode")
+        if edit_mode:
+            edited_df = st.data_editor(u_h, use_container_width=True, hide_index=True, num_rows="dynamic")
+            if st.button("💾 Save History Changes"):
+                other_vehicles = hist[hist["Unit"] != active_unit]
+                final_df = pd.concat([other_vehicles, edited_df], ignore_index=True)
+                save_df(final_df, LOG)
+                st.rerun()
+        else:
+            st.dataframe(u_h, use_container_width=True, hide_index=True)
