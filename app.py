@@ -141,13 +141,20 @@ with col1:
             entry["Oil_M"], entry["Oil_P"], entry["Oil_T"] = f"{o_m} ({v_m}L)", f"{o_p} ({v_p}L)", f"{o_t} ({v_t}L)"
             entry["Notes"] = f"Filter: {o_f} | {o_notes}"
         else:
-            o_type = st.selectbox("Type", ["Full Synth", "Blend", "Conventional"])
-            o_grade = st.text_input("Grade")
-            o_lit = st.text_input("Liters")
-            o_f = st.text_input("Filter #")
-            o_notes = st.text_area("Service Details")
-            entry["Oil_M"] = f"{o_grade} ({o_type})"
-            entry["Notes"] = f"{o_lit}L | Filter: {o_f} | {o_notes}"
+            st.markdown("##### 🛢️ LUBE & FILTER SERVICE")
+            # Pro Layout: Specs vs Volume
+            s1, s2 = st.columns(2)
+            o_grade = s1.text_input("Oil Grade (e.g. 5W-30)")
+            o_type = s2.selectbox("Fluid Category", ["Full Synthetic", "Synthetic Blend", "High Mileage", "Conventional"])
+            
+            v1, v2 = st.columns(2)
+            o_lit = v1.text_input("Total Volume (Liters)")
+            o_f = v2.text_input("Oil Filter Part #")
+            
+            o_notes = st.text_area("Additional Service Notes (e.g., Drain plug washer replaced)")
+            
+            entry["Oil_M"] = f"{o_grade} {o_type}"
+            entry["Notes"] = f"Volume: {o_lit}L | Filter: {o_f} | {o_notes}"
 
     elif mode == "Tires":
         if active_cat == "Motorcycle":
@@ -158,7 +165,7 @@ with col1:
             entry["F_Tire"], entry["R_Tire"] = f"{f_s} ({f_p})", f"{r_s} ({r_p})"
             entry["Notes"] = st.text_area("Condition / Brand")
         else:
-            entry["Notes"] = st.text_area("Tire Notes (Size, PSI, Rotation, Brand)")
+            entry["Notes"] = st.text_area("Tire Service Notes (Size, PSI, Rotation, Brand)")
 
     elif mode == "Repair":
         rep_sys = st.selectbox("System", ["Engine", "Transmission", "Electrical", "Audio", "Suspension", "Brakes", "Exhaust", "Body"])
