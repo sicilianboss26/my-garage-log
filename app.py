@@ -94,7 +94,6 @@ st.markdown(f'<div class="working-on">WORKING ON: {active_v.upper()}</div>', uns
 col1, col2 = st.columns([1.3, 2], gap="large")
 
 with col1:
-    # --- FORM INITIALIZATION ---
     mode = st.selectbox("CATEGORY", ["Oil Change", "Tires", "Repair", "Diagnostic", "Bulbs", "Legal File"])
     
     km = ""
@@ -112,7 +111,6 @@ with col1:
     entry["KM"] = km
     entry["Photo"] = photo_name
 
-    # --- CATEGORY LOGIC ---
     if mode == "Oil Change":
         if active_cat == "Motorcycle":
             st.markdown("### 🏍️ Triple-Oil Service")
@@ -148,38 +146,3 @@ with col1:
     elif mode == "Repair":
         rep_cat = st.selectbox("System", ["Engine", "Transmission", "Electrical/Electronics", "Audio/Custom", "Suspension", "Brakes", "Exhaust", "Body"])
         entry["Type"] = f"Repair: {rep_cat}"
-        entry["Notes"] = st.text_area("Work Details")
-
-    elif mode == "Diagnostic":
-        st.markdown("### ⚡ Diagnostic Scan")
-        d1, d2 = st.columns(2)
-        dtc = d1.text_input("DTC (Engine)")
-        abs_c = d1.text_input("ABS")
-        srs = d2.text_input("SRS")
-        oth = d2.text_input("Body/Other")
-        diag_notes = st.text_area("Diagnostic Findings")
-        entry["Notes"] = f"DTC:{dtc} | SRS:{srs} | ABS:{abs_c} | Body:{oth} | {diag_notes}"
-
-    elif mode == "Bulbs":
-        st.markdown("### 💡 Lighting")
-        b_l = st.selectbox("Location", ["Low/High Beam", "Fog Lights", "Turn/Marker", "License Plate", "Tail/Brake", "Reverse", "Interior", "Side Marker/Custom"])
-        entry["Type"] = f"Lighting: {b_l}"
-        entry["Bulbs"] = st.text_input("Bulb Spec")
-        entry["Notes"] = st.text_area("Notes")
-
-    elif mode == "Legal File":
-        st.markdown("### 📄 Legal / Papers")
-        doc_type = st.selectbox("Document Type", ["Insurance", "Registration", "License"])
-        d_col1, d_col2 = st.columns(2)
-        if doc_type == "License":
-            with d_col1: pay_d = st.date_input("Renewal/Payment Date")
-            with d_col2: exp_d = st.date_input("Expiry Date")
-            entry["Notes"] = f"Renewed: {pay_d} | Expires: {exp_d}"
-        else:
-            with d_col1: from_d = st.date_input("From Date")
-            with d_col2: to_d = st.date_input("To Date")
-            entry["Notes"] = f"Period: {from_d} to {to_d}"
-        entry["Type"] = f"Legal: {doc_type}"
-
-    if st.button("💾 SAVE RECORD"):
-        pd.concat([pd.read_csv(LOG), pd.DataFrame([entry])],
