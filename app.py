@@ -6,69 +6,33 @@ import os
 # --- 1. INTERFACE STYLING ---
 st.set_page_config(page_title="Garage Hub", page_icon="🔧", layout="wide")
 
-# This image is a professional, dark workshop setting
 bg_img = "https://images.unsplash.com/photo-1507702553912-a15641ec5821?q=80&w=2600&auto=format&fit=crop"
 
 st.markdown(f"""
     <style>
-    /* Full Page Background */
     .stApp {{
         background-image: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), url("{bg_img}");
-        background-size: cover;
-        background-position: center;
-        background-attachment: fixed;
+        background-size: cover; background-position: center; background-attachment: fixed;
     }}
-    
-    /* Neon Glassmorphism effect for all main containers */
     [data-testid="stVerticalBlock"] > div:has(div.login-card), 
     .dash-header, .stForm, [data-testid="column"], [data-testid="stExpander"] {{
         background: rgba(15, 15, 15, 0.85) !important;
-        backdrop-filter: blur(8px);
-        border-radius: 12px;
-        padding: 20px;
+        backdrop-filter: blur(8px); border-radius: 12px; padding: 20px;
         border: 1px solid rgba(255, 75, 75, 0.3) !important;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.5);
     }}
-
-    /* Title & Headers */
-    .shop-logo {{ 
-        font-size: 60px; font-weight: 900; color: #ff4b4b; 
-        text-shadow: 0px 0px 10px rgba(255, 75, 75, 0.5); 
-        letter-spacing: 3px; margin-bottom: 0px;
-    }}
-    .shop-subtitle {{ 
-        color: #888; font-family: 'Courier New'; font-size: 14px; 
-        letter-spacing: 10px; margin-bottom: 40px; text-transform: uppercase; 
-    }}
-    
-    .working-on {{ color: #00ff00; font-family: 'Courier New', monospace; font-size: 28px; font-weight: bold; text-shadow: 0 0 10px rgba(0, 255, 0, 0.3); }}
+    .shop-logo {{ font-size: 60px; font-weight: 900; color: #ff4b4b; text-shadow: 0px 0px 10px rgba(255, 75, 75, 0.5); letter-spacing: 3px; }}
+    .shop-subtitle {{ color: #888; font-family: 'Courier New'; font-size: 14px; letter-spacing: 10px; margin-bottom: 40px; text-transform: uppercase; }}
+    .working-on {{ color: #00ff00; font-family: 'Courier New', monospace; font-size: 28px; font-weight: bold; }}
     .current-time {{ color: #ff4b4b; font-size: 18px; font-weight: 800; text-transform: uppercase; }}
-
-    /* Input Fields - Neon Green Text */
     .stTextInput input, .stTextArea textarea, .stSelectbox div {{
-        background-color: rgba(0, 0, 0, 0.7) !important;
-        color: #00ff00 !important;
-        border: 1px solid #333 !important;
-        font-family: 'Courier New', monospace !important;
+        background-color: rgba(0, 0, 0, 0.7) !important; color: #00ff00 !important;
+        border: 1px solid #333 !important; font-family: 'Courier New', monospace !important;
     }}
-
-    /* Buttons */
     .stButton>button {{ 
         width: 100%; background: linear-gradient(135deg, #ff4b4b 0%, #a10000 100%); 
-        color: white; font-weight: 900; font-size: 16px;
-        height: 3.5em; border-radius: 8px; border: none; text-transform: uppercase;
-        box-shadow: 0 4px 10px rgba(255, 75, 75, 0.2);
+        color: white; font-weight: 900; height: 3.5em; border-radius: 8px; border: none; text-transform: uppercase;
     }}
-    .stButton>button:hover {{
-        box-shadow: 0 0 20px rgba(255, 75, 75, 0.6);
-        transform: translateY(-2px);
-    }}
-    
-    /* Sidebar Overhaul */
-    section[data-testid="stSidebar"] {{ 
-        background-color: rgba(10, 10, 10, 0.95) !important; 
-        border-right: 1px solid #ff4b4b;
-    }}
+    section[data-testid="stSidebar"] {{ background-color: rgba(10, 10, 10, 0.95) !important; border-right: 1px solid #ff4b4b; }}
     </style>
     """, unsafe_allow_html=True)
 
@@ -165,9 +129,7 @@ with col1:
     if mode == "Oil Change":
         if active_cat == "Motorcycle":
             c1, c2, c3 = st.columns(3)
-            entry["Oil_M"] = c1.text_input("Motor")
-            entry["Oil_P"] = c2.text_input("Primary")
-            entry["Oil_T"] = c3.text_input("Trans")
+            entry["Oil_M"], entry["Oil_P"], entry["Oil_T"] = c1.text_input("Motor"), c2.text_input("Primary"), c3.text_input("Trans")
         else:
             o_t = st.selectbox("Type", ["Full Synth", "Blend", "Conventional"])
             o_g = st.text_input("Grade")
@@ -183,40 +145,4 @@ with col1:
         entry["Notes"] = st.text_area("Condition")
 
     elif mode == "Repair":
-        rep_sys = st.selectbox("System", ["Engine", "Transmission", "Electrical", "Audio", "Suspension", "Brakes", "Exhaust", "Body"])
-        entry["Type"] = f"Repair: {rep_sys}"
-        entry["Notes"] = f"Parts: {st.text_area('Parts')} | Work: {st.text_area('Summary')}"
-
-    elif mode == "Diagnostic":
-        dtc = st.text_input("DTC / Fault Codes")
-        entry["Notes"] = f"CODES: {dtc} | FINDINGS: {st.text_area('Tech Notes')}"
-
-    elif mode == "Bulbs":
-        entry["Type"] = f"Bulb: {st.selectbox('Position', ['Low', 'High', 'Fog', 'Signal', 'Tail'])}"
-        entry["Notes"] = f"Spec: {st.text_input('Spec')} | {st.text_area('Notes')}"
-
-    elif mode == "Legal File":
-        entry["Type"] = f"Legal: {st.selectbox('Doc', ['Registration', 'Insurance', 'License', 'Safety'])}"
-        entry["Notes"] = f"Expiry: {st.date_input('Valid Until')}"
-
-    if st.button("💾 SAVE RECORD TO LOG"):
-        df_l = pd.read_csv(LOG)
-        pd.concat([df_l, pd.DataFrame([entry])], ignore_index=True).to_csv(LOG, index=False)
-        st.rerun()
-
-with col2:
-    st.markdown("### 📋 HISTORY")
-    h_df = pd.read_csv(LOG)
-    if not h_df.empty:
-        v_h = h_df[h_df["Vehicle"] == active_v].sort_values(by="Date", ascending=False)
-        st.dataframe(v_h, use_container_width=True, hide_index=True)
-        
-        with st.expander("📝 EDIT / DELETE LOGS"):
-            if not v_h.empty:
-                v_h['Display'] = v_h['Date'] + " - " + v_h['Type']
-                sel_idx = st.selectbox("Select Record", v_h.index, format_func=lambda x: v_h.loc[x, 'Display'])
-                c_del, c_up = st.columns(2)
-                if c_del.button("🗑️ DELETE"):
-                    h_df.drop(sel_idx).to_csv(LOG, index=False)
-                    st.rerun()
-                up_notes = st.text_area("Edit Notes", value=str(h
+        rep_sys = st.selectbox("System", ["Engine", "Transmission", "Electrical", "Audio", "Suspension", "Brakes
