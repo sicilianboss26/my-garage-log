@@ -151,27 +151,4 @@ with col1:
     elif mode == "Diagnostic":
         st.markdown("### ⚡ Diagnostic Scan")
         d1, d2 = st.columns(2)
-        dtc = d1.text_input("DTC")
-        abs_c = d1.text_input("ABS")
-        srs = d2.text_input("SRS")
-        oth = d2.text_input("Body")
-        diag_notes = st.text_area("Notes")
-        entry["Notes"] = f"DTC:{dtc} | SRS:{srs} | ABS:{abs_c} | Body:{oth} | {diag_notes}"
-
-    elif mode == "Bulbs":
-        st.markdown("### 💡 Lighting")
-        b_l = st.selectbox("Location", ["Low/High Beam", "Fog Lights", "Turn/Marker", "License Plate", "Tail/Brake", "Reverse", "Interior", "Side Marker/Custom"])
-        entry["Type"] = f"Lighting: {b_l}"
-        entry["Bulbs"] = st.text_input("Bulb Spec")
-        entry["Notes"] = st.text_area("Replacement Notes")
-
-    elif mode == "Legal File":
-        st.markdown("### 📄 Legal / Papers")
-        doc_type = st.selectbox("Document Type", ["Insurance", "Registration", "License"])
-        d_col1, d_col2 = st.columns(2)
-        
-        if doc_type == "License":
-            with d_col1: pay_d = st.date_input("Renewal/Payment Date")
-            with d_col2: exp_d = st.date_input("Expiry Date")
-            entry["Notes"] = f"Renewed: {pay_d} | Expires: {exp_d}"
-        else
+        dt
