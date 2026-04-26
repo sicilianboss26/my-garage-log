@@ -107,7 +107,7 @@ if active_v:
     st.markdown(f"""
         <div class="dash-header">
             <div class="current-time">{display_time}</div>
-            <div class="working-on">CURRENT VEHICLE: {active_v.upper()}</div>
+            <div class="working-on">CURRENT VEHICLE: {active_v.upper()} ({active_cat.upper()})</div>
         </div>
         """, unsafe_allow_html=True)
 else:
@@ -128,24 +128,31 @@ with col1:
 
     if mode == "Oil Change":
         if active_cat == "Motorcycle":
+            st.markdown("##### 🏍️ Triple-Oil Service")
             c1, c2, c3 = st.columns(3)
-            entry["Oil_M"] = c1.text_input("Motor")
-            entry["Oil_P"] = c2.text_input("Primary")
-            entry["Oil_T"] = c3.text_input("Trans")
+            o_m = c1.text_input("Engine Oil", "20W-50")
+            o_p = c2.text_input("Primary Oil")
+            o_t = c3.text_input("Trans Oil")
+            o_f = st.text_input("Filter Part #")
+            o_notes = st.text_area("Service Details")
+            entry["Oil_M"], entry["Oil_P"], entry["Oil_T"] = o_m, o_p, o_t
+            entry["Notes"] = f"Filter: {o_f} | {o_notes}"
         else:
-            o_t = st.selectbox("Type", ["Full Synth", "Blend", "Conventional"])
-            o_g = st.text_input("Grade")
-            entry["Oil_M"] = f"{o_g} ({o_t})"
-        entry["Notes"] = st.text_area("Notes / Filter #")
+            o_type = st.selectbox("Type", ["Full Synth", "Blend", "Conventional"])
+            o_grade = st.text_input("Grade")
+            o_lit = st.text_input("Liters")
+            o_f = st.text_input("Filter #")
+            o_notes = st.text_area("Service Details")
+            entry["Oil_M"] = f"{o_grade} ({o_type})"
+            entry["Notes"] = f"{o_lit}L | Filter: {o_f} | {o_notes}"
 
     elif mode == "Tires":
         t1, t2 = st.columns([2, 1])
         f_s, f_p = t1.text_input("Front Size"), t2.text_input("Front PSI")
         t3, t4 = st.columns([2, 1])
         r_s, r_p = t3.text_input("Rear Size"), t4.text_input("Rear PSI")
-        entry["F_Tire"] = f"{f_s} ({f_p})"
-        entry["R_Tire"] = f"{r_s} ({r_p})"
-        entry["Notes"] = st.text_area("Condition")
+        entry["F_Tire"], entry["R_Tire"] = f"{f_s} ({f_p})", f"{r_s} ({r_p})"
+        entry["Notes"] = st.text_area("Condition / Brand")
 
     elif mode == "Repair":
         rep_sys = st.selectbox("System", ["Engine", "Transmission", "Electrical", "Audio", "Suspension", "Brakes", "Exhaust", "Body"])
@@ -156,7 +163,7 @@ with col1:
 
     elif mode == "Diagnostic":
         dtc = st.text_input("DTC / Fault Codes")
-        findings = st.text_area("Findings")
+        findings = st.text_area("Tech Findings")
         entry["Notes"] = f"CODES: {dtc} | {findings}"
 
     elif mode == "Bulbs":
@@ -173,30 +180,4 @@ with col1:
 
     if st.button("💾 SAVE RECORD TO LOG"):
         df_l = pd.read_csv(LOG)
-        pd.concat([df_l, pd.DataFrame([entry])], ignore_index=True).to_csv(LOG, index=False)
-        st.rerun()
-
-with col2:
-    st.subheader("📋 HISTORY")
-    h_df = pd.read_csv(LOG)
-    if not h_df.empty:
-        v_h = h_df[h_df["Vehicle"] == active_v].sort_values(by="Date", ascending=False)
-        st.dataframe(v_h, use_container_width=True, hide_index=True)
-        
-        with st.expander("📝 EDIT / DELETE LOGS"):
-            if not v_h.empty:
-                v_h['Display'] = v_h['Date'] + " - " + v_h['Type']
-                sel_idx = st.selectbox("Select Record", v_h.index, format_func=lambda x: v_h.loc[x, 'Display'])
-                c_del, c_up = st.columns(2)
-                if c_del.button("🗑️ DELETE"):
-                    h_df.drop(sel_idx).to_csv(LOG, index=False)
-                    st.rerun()
-                
-                # Fetching current value safely
-                current_note = str(h_df.loc[sel_idx, "Notes"])
-                new_notes = st.text_area("Edit Notes", value=current_note)
-                
-                if c_up.button("🔄 PUSH UPDATE"):
-                    h_df.at[sel_idx, "Notes"] = new_notes
-                    h_df.to_csv(LOG, index=False)
-                    st.rerun()
+        pd.concat([df_l, pd.DataFrame(
