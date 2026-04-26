@@ -14,6 +14,7 @@ st.markdown(f"""
         background-image: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), url("{bg_img}");
         background-size: cover; background-position: center; background-attachment: fixed;
     }}
+    [data-testid="stVerticalBlock"] > div:has(div.login-card), 
     .dash-header, .stForm, [data-testid="column"], [data-testid="stExpander"] {{
         background: rgba(15, 15, 15, 0.85) !important;
         backdrop-filter: blur(8px); border-radius: 12px; padding: 20px;
@@ -35,7 +36,7 @@ st.markdown(f"""
     </style>
     """, unsafe_allow_html=True)
 
-# --- 2. TIME LOGIC (MONTREAL OFFSET) ---
+# --- 2. TIME LOGIC (MONTREAL UTC-4) ---
 local_now = datetime.utcnow() - timedelta(hours=4)
 display_time = local_now.strftime("%A, %B %d, %Y | %I:%M %p")
 
@@ -149,3 +150,56 @@ with col1:
             o_f = v2.text_input("Filter #")
             o_notes = st.text_area("Additional Service Notes")
             entry["Oil_M"] = f"{o_grade} {o_type}"
+            entry["Notes"] = f"Volume: {o_lit}L | Filter: {o_f} | {o_notes}"
+
+    elif mode == "Tires":
+        st.markdown("##### 🏁 TIRE PRESSURE & SPECS")
+        sz1, sz2 = st.columns(2)
+        f_size = sz1.text_input("Front Size")
+        r_size = sz2.text_input("Rear Size")
+        ps1, ps2 = st.columns(2)
+        f_psi = ps1.text_input("Front PSI")
+        r_psi = ps2.text_input("Rear PSI")
+        st.divider()
+        t_action = st.multiselect("Actions Taken", ["New Install", "Rotation", "Balance Check", "Winter Swap", "Flat Repair"])
+        t_notes = st.text_area("Notes")
+        entry["F_Tire"] = f"F: {f_size} ({f_psi} PSI)"
+        entry["R_Tire"] = f"R: {r_size} ({r_psi} PSI)"
+        entry["Notes"] = f"Action: {', '.join(t_action)} | {t_notes}"
+
+    elif mode == "Repair":
+        rep_sys = st.selectbox("System", ["Engine", "Transmission", "Electrical", "Audio", "Suspension", "Brakes", "Exhaust", "Body"])
+        parts = st.text_area("Parts List")
+        work = st.text_area("Work Summary")
+        entry["Type"] = f"Repair: {rep_sys}"
+        entry["Notes"] = f"Parts: {parts} | Work: {work}"
+
+    elif mode == "Diagnostic":
+        dtc = st.text_input("DTC / Fault Codes")
+        findings = st.text_area("Tech Findings")
+        entry["Notes"] = f"CODES: {dtc} | {findings}"
+
+    elif mode == "Bulbs":
+        b_pos = st.selectbox("Position", ["Low Beam", "High Beam", "Fog", "Signal", "Tail"])
+        b_spec = st.text_input("Bulb Spec")
+        entry["Type"] = f"Bulb: {b_pos}"
+        entry["Notes"] = f"Spec: {b_spec}"
+
+    elif mode == "Legal File":
+        l_doc = st.selectbox("Doc Type", ["Registration", "Insurance", "License", "Safety"])
+        l_date = st.date_input("Valid Until")
+        entry["Type"] = f"Legal: {l_doc}"
+        entry["Notes"] = f"Expiry: {l_date}"
+
+    if st.button("💾 SAVE RECORD TO LOG"):
+        df_l = pd.read_csv(LOG)
+        new_row = pd.DataFrame([entry])
+        pd.concat([df_l, new_row], ignore_index=True).to_csv(LOG, index=False)
+        st.rerun()
+
+with col2:
+    st.subheader("📋 HISTORY")
+    h_df = pd.read_csv(LOG)
+    if not h_df.empty:
+        v_h = h_df[h_df["Vehicle"] == active_v].sort_values(by="Date", ascending=False)
+        st.dataframe(v_h, use_container_width=True, hide_index=True)
