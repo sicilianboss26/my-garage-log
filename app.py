@@ -111,7 +111,8 @@ with col1:
     entry["KM"] = km
     entry["Photo"] = photo_name
 
-    if mode == "Oil Change":
+    # --- CATEGORY LOGIC ---
+    if mode == "Oil Change": # LOCKED AS REQUESTED
         if active_cat == "Motorcycle":
             st.markdown("### 🏍️ Triple-Oil Service")
             c1, c2, c3 = st.columns(3)
@@ -131,7 +132,7 @@ with col1:
             entry["Oil_M"] = f"{o_grade} ({o_type})"
             entry["Notes"] = f"{o_liters}L | Filter: {o_filter} | {note_content}"
 
-    elif mode == "Tires":
+    elif mode == "Tires": # LOCKED AS REQUESTED
         st.markdown("### Tires & PSI")
         ft1, ft2 = st.columns([2, 1])
         f_s = ft1.text_input("Front Size")
@@ -143,6 +144,19 @@ with col1:
         entry["R_Tire"] = f"{r_s} ({r_p} PSI)"
         entry["Notes"] = st.text_area("Service Notes")
 
-    elif mode == "Repair":
-        rep_cat = st.selectbox("System", ["Engine", "Transmission", "Electrical/Electronics", "Audio/Custom", "Suspension", "Brakes", "Exhaust", "Body"])
+    elif mode == "Repair": # RESTORED
+        st.markdown("### 🛠️ Repair Details")
+        rep_cat = st.selectbox("System", ["Engine", "Transmission", "Electrical/Electronics", "Audio/Custom", "Suspension", "Brakes", "Exhaust", "Body", "Interior"])
+        parts_list = st.text_area("Parts Replaced / Used")
+        work_desc = st.text_area("Work Performed")
         entry["Type"] = f"Repair: {rep_cat}"
+        entry["Notes"] = f"Parts: {parts_list} | Work: {work_desc}"
+
+    elif mode == "Diagnostic": # RESTORED
+        st.markdown("### ⚡ Diagnostic Scan")
+        d1, d2 = st.columns(2)
+        dtc = d1.text_input("DTC (Engine/Trans)")
+        abs_c = d1.text_input("ABS System")
+        srs = d2.text_input("SRS (Airbag)")
+        oth = d2.text_input("Body/Other Codes")
+        diag_notes = st.text_area("Diagnostic Findings / Fix Needed
