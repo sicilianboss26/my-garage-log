@@ -4,7 +4,7 @@ from datetime import datetime
 import os
 
 # --- 1. INTERFACE STYLING ---
-st.set_page_config(page_title="Antonino's Garage Hub", page_icon="🔧", layout="wide")
+st.set_page_config(page_title="Garage Hub", page_icon="🔧", layout="wide")
 
 st.markdown("""
     <style>
@@ -17,8 +17,8 @@ st.markdown("""
         padding: 60px; text-align: center; margin-top: 50px;
         box-shadow: 0px 0px 30px rgba(255, 75, 75, 0.15);
     }
-    .shop-logo { font-size: 48px; font-weight: 900; color: #ff4b4b; margin-bottom: 5px; text-shadow: 3px 3px #000; letter-spacing: -1px; }
-    .shop-subtitle { color: #888; font-family: 'Courier New'; font-size: 16px; letter-spacing: 6px; margin-bottom: 35px; text-transform: uppercase; }
+    .shop-logo { font-size: 54px; font-weight: 900; color: #ff4b4b; margin-bottom: 5px; text-shadow: 3px 3px #000; letter-spacing: 2px; }
+    .shop-subtitle { color: #888; font-family: 'Courier New'; font-size: 16px; letter-spacing: 8px; margin-bottom: 35px; text-transform: uppercase; }
     
     /* Header & Status */
     .dash-header { 
@@ -50,17 +50,17 @@ if not st.session_state.auth:
     _, center, _ = st.columns([1, 1.4, 1])
     with center:
         st.markdown('<div class="login-card">', unsafe_allow_html=True)
-        st.markdown('<div class="shop-logo">ANTONINO\'S</div>', unsafe_allow_html=True)
-        st.markdown('<div class="shop-subtitle">GARAGE HUB</div>', unsafe_allow_html=True)
+        st.markdown('<div class="shop-logo">GARAGE HUB</div>', unsafe_allow_html=True)
+        st.markdown('<div class="shop-subtitle">FLEET MANAGEMENT</div>', unsafe_allow_html=True)
         
         pin = st.text_input("ENTER ACCESS PIN", type="password", placeholder="****")
         st.markdown("<br>", unsafe_allow_html=True)
-        if st.button("OPEN GARAGE"):
+        if st.button("OPEN HUB"):
             if pin == "1234":
                 st.session_state.auth = True
                 st.rerun()
             else:
-                st.error("INVALID CREDENTIALS")
+                st.error("INVALID PIN")
         st.markdown('</div>', unsafe_allow_html=True)
     st.stop()
 
@@ -75,7 +75,7 @@ if not os.path.exists(FLEET):
 
 # --- 4. SIDEBAR ---
 with st.sidebar:
-    st.markdown("### 🔧 HUB ADMIN")
+    st.markdown("### ⚙️ SYSTEM")
     if st.button("LOCK HUB"):
         st.session_state.auth = False
         st.rerun()
@@ -101,7 +101,7 @@ with st.sidebar:
         ma = st.text_input("Make")
         mo = st.text_input("Model")
         ct = st.radio("Type", ["Car/SUV", "Truck", "Motorcycle"])
-        if st.button("SAVE VEHICLE"):
+        if st.button("SAVE UNIT"):
             df_f = pd.read_csv(FLEET)
             new_v = pd.DataFrame([{"Year": y, "Make": ma, "Model": mo, "Cat": ct}])
             pd.concat([df_f, new_v], ignore_index=True).to_csv(FLEET, index=False)
@@ -109,7 +109,7 @@ with st.sidebar:
 
 # --- 5. DASHBOARD HEADER ---
 if active_v:
-    now = datetime.now().strftime("%A, %B %d | %H:%M")
+    now = datetime.now().strftime("%A, %b %d | %H:%M")
     st.markdown(f"""
         <div class="dash-header">
             <div class="current-time">{now}</div>
