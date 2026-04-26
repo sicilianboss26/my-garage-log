@@ -142,30 +142,41 @@ with col1:
             entry["Notes"] = f"Filter: {o_f} | {o_notes}"
         else:
             st.markdown("##### 🛢️ LUBE & FILTER SERVICE")
-            # Pro Layout: Specs vs Volume
             s1, s2 = st.columns(2)
-            o_grade = s1.text_input("Oil Grade (e.g. 5W-30)")
+            o_grade = s1.text_input("Oil Grade")
             o_type = s2.selectbox("Fluid Category", ["Full Synthetic", "Synthetic Blend", "High Mileage", "Conventional"])
-            
             v1, v2 = st.columns(2)
-            o_lit = v1.text_input("Total Volume (Liters)")
-            o_f = v2.text_input("Oil Filter Part #")
-            
-            o_notes = st.text_area("Additional Service Notes (e.g., Drain plug washer replaced)")
-            
+            o_lit = v1.text_input("Volume (L)")
+            o_f = v2.text_input("Filter #")
+            o_notes = st.text_area("Additional Service Notes")
             entry["Oil_M"] = f"{o_grade} {o_type}"
             entry["Notes"] = f"Volume: {o_lit}L | Filter: {o_f} | {o_notes}"
 
     elif mode == "Tires":
-        if active_cat == "Motorcycle":
-            t1, t2 = st.columns([2, 1])
-            f_s, f_p = t1.text_input("Front Size"), t2.text_input("Front PSI")
-            t3, t4 = st.columns([2, 1])
-            r_s, r_p = t3.text_input("Rear Size"), t4.text_input("Rear PSI")
-            entry["F_Tire"], entry["R_Tire"] = f"{f_s} ({f_p})", f"{r_s} ({r_p})"
-            entry["Notes"] = st.text_area("Condition / Brand")
-        else:
-            entry["Notes"] = st.text_area("Tire Service Notes (Size, PSI, Rotation, Brand)")
+        st.markdown("##### 🏁 TIRE & CHASSIS SPECIFICATIONS")
+        
+        # Section 1: Dimensions
+        st.markdown("**DIMENSIONS & BRAND**")
+        sz1, sz2 = st.columns(2)
+        f_size = sz1.text_input("Front Tire Size")
+        r_size = sz2.text_input("Rear Tire Size")
+        t_brand = st.text_input("Tire Brand / Model")
+        
+        # Section 2: Operating Pressure
+        st.markdown("**OPERATING PRESSURE**")
+        ps1, ps2 = st.columns(2)
+        f_psi = ps1.text_input("Front Target PSI")
+        r_psi = ps2.text_input("Rear Target PSI")
+        
+        # Section 3: Shop Notes
+        st.divider()
+        t_action = st.multiselect("Actions Taken", ["New Install", "Rotation", "Balance Check", "Winter Swap", "Flat Repair"])
+        t_torque = st.text_input("Lug Nut Torque (lb-ft)")
+        t_notes = st.text_area("Condition Notes (Tread depth, wear patterns, etc.)")
+        
+        entry["F_Tire"] = f"F: {f_size} ({f_psi} PSI)"
+        entry["R_Tire"] = f"R: {r_size} ({r_psi} PSI)"
+        entry["Notes"] = f"Brand: {t_brand} | Torque: {t_torque} | Action: {', '.join(t_action)} | {t_notes}"
 
     elif mode == "Repair":
         rep_sys = st.selectbox("System", ["Engine", "Transmission", "Electrical", "Audio", "Suspension", "Brakes", "Exhaust", "Body"])
