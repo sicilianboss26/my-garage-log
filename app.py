@@ -64,12 +64,11 @@ if not st.session_state.auth:
 LOG, FLEET = "maintenance_log.csv", "fleet_database.csv"
 COLS = ["Date", "Vehicle", "Type", "KM", "Notes", "Oil_M", "Oil_P", "Oil_T", "F_Tire", "R_Tire", "Bulbs", "Photo"]
 
-if not os.path.exists(LOG):
-    pd.DataFrame(columns=COLS).to_csv(LOG, index=False)
-if not os.path.exists(FLEET):
-    pd.DataFrame(columns=["Year", "Make", "Model", "Cat"]).to_csv(FLEET, index=False)
+for f in [LOG, FLEET]:
+    if not os.path.exists(f):
+        pd.DataFrame(columns=COLS if f==LOG else ["Year", "Make", "Model", "Cat"]).to_csv(f, index=False)
 
-# --- 5. SIDEBAR (FIXED INDENTATION) ---
+# --- 5. SIDEBAR ---
 with st.sidebar:
     st.markdown("### ⚙️ SYSTEM")
     if st.button("LOCK HUB"):
@@ -115,7 +114,7 @@ else:
     st.info("No vehicles registered. Add one in the sidebar.")
     st.stop()
 
-# --- 7. DATA ENTRY & HISTORY ---
+# --- 7. DATA ENTRY ---
 col1, col2 = st.columns([1.3, 2], gap="large")
 
 with col1:
@@ -126,24 +125,13 @@ with col1:
     st.divider()
 
     entry = {k: "" for k in COLS}
-    entry["Date"] = local_now.strftime("%Y-%m-%d")
-    entry["Vehicle"] = active_v
-    entry["Type"] = mode
-    entry["KM"] = km
-    entry["Photo"] = photo_name
+    entry.update({"Date": local_now.strftime("%Y-%m-%d"), "Vehicle": active_v, "Type": mode, "KM": km, "Photo": photo_name})
 
     if mode == "Oil Change":
         if active_cat == "Motorcycle":
-            st.markdown("### 🏍️ Triple-Oil Service")
             c1, c2, c3 = st.columns(3)
-            with c1: entry["Oil_M"] = st.text_input("Engine Oil", "20W-50")
-            with c2: entry["Oil_P"] = st.text_input("Primary Oil")
-            with c3: entry["Oil_T"] = st.text_input("Trans Oil")
-            o_filter = st.text_input("Filter #")
-            entry["Notes"] = f"Filter: {o_filter} | {st.text_area('Notes')}"
-        else:
-            o_type = st.selectbox("Oil Type", ["Full Synthetic", "Synthetic Blend", "Conventional"])
-            o_grade = st.text_input("Oil Grade")
-            o_liters = st.text_input("Liters")
-            entry["Oil_M"] = f"{o_grade} ({o_type})"
-            entry["Notes"] = f"{o_liters}L | Filter: {st.text_input('Filter #')} | {st.text_area('
+            entry["Oil_M"] = c1.text_input("Engine Oil", "20W-50")
+            entry["Oil_P"] = c2.text_input("Primary Oil")
+            entry["Oil_T"] = c3.text_input("Trans Oil")
+            filter_val = st.text_input("Filter #")
+            notes_val = st.text_area("Notes")
