@@ -129,7 +129,9 @@ with col1:
     if mode == "Oil Change":
         if active_cat == "Motorcycle":
             c1, c2, c3 = st.columns(3)
-            entry["Oil_M"], entry["Oil_P"], entry["Oil_T"] = c1.text_input("Motor"), c2.text_input("Primary"), c3.text_input("Trans")
+            entry["Oil_M"] = c1.text_input("Motor")
+            entry["Oil_P"] = c2.text_input("Primary")
+            entry["Oil_T"] = c3.text_input("Trans")
         else:
             o_t = st.selectbox("Type", ["Full Synth", "Blend", "Conventional"])
             o_g = st.text_input("Grade")
@@ -141,8 +143,60 @@ with col1:
         f_s, f_p = t1.text_input("Front Size"), t2.text_input("Front PSI")
         t3, t4 = st.columns([2, 1])
         r_s, r_p = t3.text_input("Rear Size"), t4.text_input("Rear PSI")
-        entry["F_Tire"], entry["R_Tire"] = f"{f_s} ({f_p})", f"{r_s} ({r_p})"
+        entry["F_Tire"] = f"{f_s} ({f_p})"
+        entry["R_Tire"] = f"{r_s} ({r_p})"
         entry["Notes"] = st.text_area("Condition")
 
     elif mode == "Repair":
-        rep_sys = st.selectbox("System", ["Engine", "Transmission", "Electrical", "Audio", "Suspension", "Brakes
+        rep_sys = st.selectbox("System", ["Engine", "Transmission", "Electrical", "Audio", "Suspension", "Brakes", "Exhaust", "Body"])
+        parts = st.text_area("Parts List")
+        work = st.text_area("Work Summary")
+        entry["Type"] = f"Repair: {rep_sys}"
+        entry["Notes"] = f"Parts: {parts} | Work: {work}"
+
+    elif mode == "Diagnostic":
+        dtc = st.text_input("DTC / Fault Codes")
+        findings = st.text_area("Findings")
+        entry["Notes"] = f"CODES: {dtc} | {findings}"
+
+    elif mode == "Bulbs":
+        b_pos = st.selectbox("Position", ["Low Beam", "High Beam", "Fog", "Signal", "Tail"])
+        b_spec = st.text_input("Bulb Spec")
+        entry["Type"] = f"Bulb: {b_pos}"
+        entry["Notes"] = f"Spec: {b_spec}"
+
+    elif mode == "Legal File":
+        l_doc = st.selectbox("Doc Type", ["Registration", "Insurance", "License", "Safety"])
+        l_date = st.date_input("Valid Until")
+        entry["Type"] = f"Legal: {l_doc}"
+        entry["Notes"] = f"Expiry: {l_date}"
+
+    if st.button("💾 SAVE RECORD TO LOG"):
+        df_l = pd.read_csv(LOG)
+        pd.concat([df_l, pd.DataFrame([entry])], ignore_index=True).to_csv(LOG, index=False)
+        st.rerun()
+
+with col2:
+    st.subheader("📋 HISTORY")
+    h_df = pd.read_csv(LOG)
+    if not h_df.empty:
+        v_h = h_df[h_df["Vehicle"] == active_v].sort_values(by="Date", ascending=False)
+        st.dataframe(v_h, use_container_width=True, hide_index=True)
+        
+        with st.expander("📝 EDIT / DELETE LOGS"):
+            if not v_h.empty:
+                v_h['Display'] = v_h['Date'] + " - " + v_h['Type']
+                sel_idx = st.selectbox("Select Record", v_h.index, format_func=lambda x: v_h.loc[x, 'Display'])
+                c_del, c_up = st.columns(2)
+                if c_del.button("🗑️ DELETE"):
+                    h_df.drop(sel_idx).to_csv(LOG, index=False)
+                    st.rerun()
+                
+                # Fetching current value safely
+                current_note = str(h_df.loc[sel_idx, "Notes"])
+                new_notes = st.text_area("Edit Notes", value=current_note)
+                
+                if c_up.button("🔄 PUSH UPDATE"):
+                    h_df.at[sel_idx, "Notes"] = new_notes
+                    h_df.to_csv(LOG, index=False)
+                    st.rerun()
