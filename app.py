@@ -130,12 +130,21 @@ with col1:
         if active_cat == "Motorcycle":
             st.markdown("##### 🏍️ Triple-Oil Service")
             c1, c2, c3 = st.columns(3)
-            o_m = c1.text_input("Engine Oil", "20W-50")
+            # Row 1: Oil Brands/Grades
+            o_m = c1.text_input("Motor Oil", "20W-50")
             o_p = c2.text_input("Primary Oil")
             o_t = c3.text_input("Trans Oil")
+            # Row 2: Volumes
+            v_m = c1.text_input("Motor (L)")
+            v_p = c2.text_input("Primary (L)")
+            v_t = c3.text_input("Trans (L)")
+            
             o_f = st.text_input("Filter Part #")
             o_notes = st.text_area("Service Details")
-            entry["Oil_M"], entry["Oil_P"], entry["Oil_T"] = o_m, o_p, o_t
+            
+            entry["Oil_M"] = f"{o_m} ({v_m}L)"
+            entry["Oil_P"] = f"{o_p} ({v_p}L)"
+            entry["Oil_T"] = f"{o_t} ({v_t}L)"
             entry["Notes"] = f"Filter: {o_f} | {o_notes}"
         else:
             o_type = st.selectbox("Type", ["Full Synth", "Blend", "Conventional"])
