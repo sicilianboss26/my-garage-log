@@ -111,4 +111,68 @@ if active_v:
         </div>
         """, unsafe_allow_html=True)
 else:
-    st.info("FLEET EMPTY
+    st.info("FLEET EMPTY. ADD A VEHICLE IN THE SIDEBAR.")
+    st.stop()
+
+# --- 7. DATA ENTRY & LOGS ---
+col1, col2 = st.columns([1.3, 2], gap="large")
+
+with col1:
+    st.markdown("### ⚙️ LOG SERVICE")
+    mode = st.selectbox("TASK", ["Oil Change", "Tires", "Repair", "Diagnostic", "Bulbs", "Legal File"])
+    km = st.text_input("KM READING") if mode != "Legal File" else ""
+    st.divider()
+
+    entry = {k: "" for k in COLS}
+    entry.update({"Date": local_now.strftime("%Y-%m-%d"), "Vehicle": active_v, "Type": mode, "KM": km})
+
+    if mode == "Oil Change":
+        if active_cat == "Motorcycle":
+            st.markdown("##### 🏍️ Triple-Oil Service")
+            c1, c2, c3 = st.columns(3)
+            o_m = c1.text_input("Motor Oil", "20W-50")
+            o_p = c2.text_input("Primary Oil")
+            o_t = c3.text_input("Trans Oil")
+            v_m = c1.text_input("Motor (L)")
+            v_p = c2.text_input("Primary (L)")
+            v_t = c3.text_input("Trans (L)")
+            o_f = st.text_input("Filter Part #")
+            o_notes = st.text_area("Service Details")
+            entry["Oil_M"], entry["Oil_P"], entry["Oil_T"] = f"{o_m} ({v_m}L)", f"{o_p} ({v_p}L)", f"{o_t} ({v_t}L)"
+            entry["Notes"] = f"Filter: {o_f} | {o_notes}"
+        else:
+            o_type = st.selectbox("Type", ["Full Synth", "Blend", "Conventional"])
+            o_grade = st.text_input("Grade")
+            o_lit = st.text_input("Liters")
+            o_f = st.text_input("Filter #")
+            o_notes = st.text_area("Service Details")
+            entry["Oil_M"] = f"{o_grade} ({o_type})"
+            entry["Notes"] = f"{o_lit}L | Filter: {o_f} | {o_notes}"
+
+    elif mode == "Tires":
+        if active_cat == "Motorcycle":
+            t1, t2 = st.columns([2, 1])
+            f_s, f_p = t1.text_input("Front Size"), t2.text_input("Front PSI")
+            t3, t4 = st.columns([2, 1])
+            r_s, r_p = t3.text_input("Rear Size"), t4.text_input("Rear PSI")
+            entry["F_Tire"], entry["R_Tire"] = f"{f_s} ({f_p})", f"{r_s} ({r_p})"
+            entry["Notes"] = st.text_area("Condition / Brand")
+        else:
+            entry["Notes"] = st.text_area("Tire Notes (Size, PSI, Rotation, Brand)")
+
+    elif mode == "Repair":
+        rep_sys = st.selectbox("System", ["Engine", "Transmission", "Electrical", "Audio", "Suspension", "Brakes", "Exhaust", "Body"])
+        parts = st.text_area("Parts List")
+        work = st.text_area("Work Summary")
+        entry["Type"] = f"Repair: {rep_sys}"
+        entry["Notes"] = f"Parts: {parts} | Work: {work}"
+
+    elif mode == "Diagnostic":
+        dtc = st.text_input("DTC / Fault Codes")
+        findings = st.text_area("Tech Findings")
+        entry["Notes"] = f"CODES: {dtc} | {findings}"
+
+    elif mode == "Bulbs":
+        b_pos = st.selectbox("Position", ["Low Beam", "High Beam", "Fog", "Signal", "Tail"])
+        b_spec = st.text_input("Bulb Spec")
+        entry["Type"] = f"Bulb: {b
