@@ -123,32 +123,4 @@ with col1:
             o_notes = st.text_area("General Service Notes")
             entry["Notes"] = f"Filter: {o_filter} | {o_notes}"
         else:
-            o_type = st.selectbox("Oil Type", ["Full Synthetic", "Synthetic Blend", "Conventional"])
-            o_grade = st.text_input("Oil Grade")
-            o_liters = st.text_input("Liters")
-            o_filter = st.text_input("Filter #")
-            entry["Oil_M"] = f"{o_grade} ({o_type})"
-            note_content = st.text_area("Notes")
-            entry["Notes"] = f"{o_liters}L | Filter: {o_filter} | {note_content}"
-
-    elif mode == "Tires":
-        st.markdown("### Tires & PSI")
-        ft1, ft2 = st.columns([2, 1])
-        f_s = ft1.text_input("Front Size")
-        f_p = ft2.text_input("Front PSI")
-        rt1, rt2 = st.columns([2, 1])
-        r_s = rt1.text_input("Rear Size")
-        r_p = rt2.text_input("Rear PSI")
-        entry["F_Tire"] = f"{f_s} ({f_p} PSI)"
-        entry["R_Tire"] = f"{r_s} ({r_p} PSI)"
-        entry["Notes"] = st.text_area("Service Notes")
-
-    elif mode == "Repair":
-        rep_cat = st.selectbox("System", ["Engine", "Transmission", "Electrical", "Audio", "Suspension", "Brakes", "Exhaust", "Body"])
-        entry["Type"] = f"Repair: {rep_cat}"
-        entry["Notes"] = st.text_area("Work Details")
-
-    elif mode == "Diagnostic":
-        st.markdown("### ⚡ Diagnostic Scan")
-        d1, d2 = st.columns(2)
-        dt
+            o
