@@ -118,7 +118,10 @@ with col1:
             with c1: entry["Oil_M"] = st.text_input("Engine Oil", "20W-50")
             with c2: entry["Oil_P"] = st.text_input("Primary Oil")
             with c3: entry["Oil_T"] = st.text_input("Trans Oil")
-            entry["Notes"] = st.text_area("Filter/Drain Plug Notes")
+            st.markdown("---")
+            o_filter = st.text_input("Filter Model #")
+            o_notes = st.text_area("General Service Notes")
+            entry["Notes"] = f"Filter: {o_filter} | {o_notes}"
         else:
             o_type = st.selectbox("Oil Type", ["Full Synthetic", "Synthetic Blend", "Conventional"])
             o_grade = st.text_input("Oil Grade")
@@ -171,28 +174,4 @@ with col1:
             with d_col1: pay_d = st.date_input("Renewal/Payment Date")
             with d_col2: exp_d = st.date_input("Expiry Date")
             entry["Notes"] = f"Renewed: {pay_d} | Expires: {exp_d}"
-        else:
-            with d_col1: from_d = st.date_input("From Date")
-            with d_col2: to_d = st.date_input("To Date")
-            entry["Notes"] = f"Period: {from_d} to {to_d}"
-            
-        entry["Type"] = f"Legal: {doc_type}"
-
-    if st.button("💾 SAVE RECORD"):
-        pd.concat([pd.read_csv(LOG), pd.DataFrame([entry])], ignore_index=True).to_csv(LOG, index=False)
-        st.rerun()
-
-with col2:
-    st.subheader("📋 HISTORY")
-    h_df = pd.read_csv(LOG)
-    if not h_df.empty:
-        v_h = h_df[h_df["Vehicle"] == active_v].sort_values(by="Date", ascending=False)
-        st.dataframe(v_h, use_container_width=True, hide_index=True)
-        st.divider()
-        with st.expander("📝 Edit History"):
-            if not v_h.empty:
-                v_h['Display'] = v_h['Date'] + " - " + v_h['Type']
-                sel = st.selectbox("Select record", v_h.index, format_func=lambda x: v_h.loc[x, 'Display'])
-                if st.button("PURGE RECORD"):
-                    h_df.drop(sel).to_csv(LOG, index=False)
-                    st.rerun()
+        else
