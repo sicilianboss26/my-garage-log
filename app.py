@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime
 import os
+import pytz  # Handles the Montreal timezone logic
 
 # --- 1. INTERFACE STYLING ---
 st.set_page_config(page_title="Garage Hub", page_icon="🔧", layout="wide")
@@ -23,10 +24,10 @@ st.markdown("""
     /* Header & Status */
     .dash-header { 
         background: linear-gradient(90deg, #1c1f26 0%, #0e1117 100%);
-        padding: 20px; border-radius: 10px; border-left: 6px solid #ff4b4b; margin-bottom: 25px;
+        padding: 25px; border-radius: 10px; border-left: 6px solid #ff4b4b; margin-bottom: 25px;
     }
     .working-on { color: #00ff00; font-family: 'Courier New', monospace; font-size: 26px; font-weight: bold; text-shadow: 1px 1px #000; }
-    .current-time { color: #ff4b4b; font-size: 14px; font-weight: bold; text-transform: uppercase; margin-bottom: 5px; }
+    .current-time { color: #ff4b4b; font-size: 18px; font-weight: 900; text-transform: uppercase; margin-bottom: 8px; font-family: 'Segoe UI', sans-serif; }
 
     /* Forms */
     .stTextInput>div>div>input, .stTextArea>div>div>textarea, .stSelectbox>div>div>div, .stDateInput>div>div>input { 
@@ -42,7 +43,12 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# --- 2. FRONT ACCESS ---
+# --- 2. TIMEZONE LOGIC (MONTREAL) ---
+mtl_tz = pytz.timezone('America/Toronto') # Montreal shares the same TZ as Toronto
+local_now = datetime.now(mtl_tz)
+display_time = local_now.strftime("%A, %B %d, %Y | %I:%M %p")
+
+# --- 3. FRONT ACCESS ---
 if 'auth' not in st.session_state:
     st.session_state.auth = False
 
@@ -64,7 +70,7 @@ if not st.session_state.auth:
         st.markdown('</div>', unsafe_allow_html=True)
     st.stop()
 
-# --- 3. DATABASE SETUP ---
+# --- 4. DATABASE SETUP ---
 LOG, FLEET = "maintenance_log.csv", "fleet_database.csv"
 COLS = ["Date", "Vehicle", "Type", "KM", "Notes", "Oil_M", "Oil_P", "Oil_T", "F_Tire", "R_Tire", "Bulbs", "Photo"]
 
@@ -73,7 +79,7 @@ if not os.path.exists(LOG):
 if not os.path.exists(FLEET):
     pd.DataFrame(columns=["Year", "Make", "Model", "Cat"]).to_csv(FLEET, index=False)
 
-# --- 4. SIDEBAR ---
+# --- 5. SIDEBAR ---
 with st.sidebar:
     st.markdown("### ⚙️ SYSTEM")
     if st.button("LOCK HUB"):
@@ -107,12 +113,11 @@ with st.sidebar:
             pd.concat([df_f, new_v], ignore_index=True).to_csv(FLEET, index=False)
             st.rerun()
 
-# --- 5. DASHBOARD HEADER ---
+# --- 6. DASHBOARD HEADER ---
 if active_v:
-    now = datetime.now().strftime("%A, %b %d | %H:%M")
     st.markdown(f"""
         <div class="dash-header">
-            <div class="current-time">{now}</div>
+            <div class="current-time">{display_time}</div>
             <div class="working-on">ACTIVE BAY: {active_v.upper()}</div>
         </div>
         """, unsafe_allow_html=True)
@@ -120,7 +125,7 @@ else:
     st.info("No vehicles registered. Add one in the sidebar.")
     st.stop()
 
-# --- 6. DATA ENTRY & HISTORY ---
+# --- 7. DATA ENTRY & HISTORY ---
 col1, col2 = st.columns([1.3, 2], gap="large")
 
 with col1:
@@ -135,7 +140,7 @@ with col1:
     st.divider()
 
     entry = {k: "" for k in COLS}
-    entry["Date"] = datetime.now().strftime("%Y-%m-%d")
+    entry["Date"] = local_now.strftime("%Y-%m-%d")
     entry["Vehicle"] = active_v
     entry["Type"] = mode
     entry["KM"] = km
