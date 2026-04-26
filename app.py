@@ -13,7 +13,7 @@ st.markdown("""
     .stApp { background-color: #0e1117; color: #ffffff; }
     .login-card {
         border: 2px solid #ff4b4b; border-radius: 10px; background-color: #1c1f26;
-        padding: 50 :px; text-align: center; margin-top: 50px;
+        padding: 50px; text-align: center; margin-top: 50px;
     }
     .shop-title { color: #ff4b4b; font-size: 32px; font-weight: 900; text-transform: uppercase; letter-spacing: 3px; }
     .working-on { color: #00ff00; font-family: 'Courier New', monospace; font-size: 20px; font-weight: bold; margin-bottom: 20px; }
@@ -24,7 +24,6 @@ st.markdown("""
         width: 100%; background-color: #ff4b4b; color: white; font-weight: bold; 
         height: 3.5em; border-radius: 5px; border: none; text-transform: uppercase;
     }
-    .stButton>button:hover { background-color: #d43f3f; border: 1px solid white; }
     section[data-testid="stSidebar"] { background-color: #1c1f26; border-right: 1px solid #444; }
     </style>
     """, unsafe_allow_html=True)
@@ -72,95 +71,3 @@ if not st.session_state.auth:
             if st.button("Create Account"):
                 ud = pd.read_csv(USERS)
                 if nu not in ud['username'].values:
-                    pd.concat([ud, pd.DataFrame([{"username": nu, "password": hash_pass(np)}])]).to_csv(USERS, index=False)
-                    st.success("Account Created!")
-    st.stop()
-
-# --- 4. DATA LOADING ---
-full_fleet = load_and_fix(FLEET, ["User", "Year", "Make", "Model", "Cat"])
-full_log = load_and_fix(LOG, COLS)
-user_fleet = full_fleet[full_fleet['User'] == st.session_state.user]
-
-# --- 5. SIDEBAR ---
-with st.sidebar:
-    st.markdown(f"👤 **{st.session_state.user.upper()}**")
-    if st.button("Log Out"):
-        st.session_state.auth = False
-        st.rerun()
-    st.divider()
-    active_v, active_cat = None, "Car/SUV"
-    if not user_fleet.empty:
-        user_fleet["Name"] = user_fleet["Year"].astype(str) + " " + user_fleet["Make"] + " " + user_fleet["Model"]
-        active_v = st.selectbox("SELECT VEHICLE", user_fleet["Name"].tolist())
-        if active_v:
-            active_cat = user_fleet[user_fleet["Name"] == active_v]["Cat"].values[0]
-
-    with st.expander("Add Vehicle"):
-        y = st.selectbox("Year", range(2027, 1990, -1))
-        ma, mo = st.text_input("Make"), st.text_input("Model")
-        ct = st.radio("Type", ["Car/SUV", "Truck", "Motorcycle"])
-        if st.button("Save Vehicle"):
-            new_v = pd.DataFrame([{"User": st.session_state.user, "Year": y, "Make": ma, "Model": mo, "Cat": ct}])
-            pd.concat([full_fleet, new_v]).to_csv(FLEET, index=False)
-            st.rerun()
-
-# --- 6. MAIN ---
-st.title("📟 ANTONINO'S GARAGE HUB")
-if not active_v:
-    st.info("Please add a vehicle to begin.")
-    st.stop()
-
-st.markdown(f'<div class="working-on">WORKING ON: {active_v.upper()}</div>', unsafe_allow_html=True)
-col1, col2 = st.columns([1.3, 2], gap="large")
-
-with col1:
-    mode = st.selectbox("CATEGORY", ["Oil Change", "Tires", "Repair", "Diagnostic", "Bulbs", "Legal File"])
-    km = st.text_input("ODOMETER (KM)") if mode not in ["Bulbs", "Legal File"] else ""
-    st.divider()
-
-    entry = {k: "" for k in COLS}
-    entry.update({"User": st.session_state.user, "Date": datetime.now().strftime("%Y-%m-%d"), "Vehicle": active_v, "Type": mode, "KM": km})
-
-    if mode == "Oil Change":
-        if active_cat == "Motorcycle":
-            st.markdown("### Triple-Oil Service")
-            c1, c2, c3 = st.columns(3)
-            with c1: e_oil, e_lit = st.text_input("Engine Oil", "20W-50"), st.text_input("E-Liters")
-            with c2: p_oil, p_lit = st.text_input("Primary Oil"), st.text_input("P-Liters")
-            with c3: t_oil, t_lit = st.text_input("Trans Oil"), st.text_input("T-Liters")
-            entry.update({"Oil_M": f"{e_oil} ({e_lit}L)", "Oil_P": f"{p_oil} ({p_lit}L)", "Oil_T": f"{t_oil} ({t_lit}L)"})
-            entry["Notes"] = st.text_area("Service Notes")
-        else:
-            o_type = st.selectbox("Oil Type", ["Full Synthetic", "Synthetic Blend", "Conventional"])
-            o_gr, o_lt, o_fl = st.text_input("Grade"), st.text_input("Liters"), st.text_input("Filter #")
-            entry["Oil_M"] = f"{o_gr} ({o_type})"
-            entry["Notes"] = st.text_area(f"{o_lt}L | Filter: {o_fl}")
-
-    elif mode == "Tires":
-        f_s, f_p = st.text_input("Front Size"), st.text_input("Front PSI")
-        r_s, r_p = st.text_input("Rear Size"), st.text_input("Rear PSI")
-        entry.update({"F_Tire": f"{f_s} ({f_p} PSI)", "R_Tire": f"{r_s} ({r_p} PSI)"})
-        entry["Notes"] = st.text_area("Tire Specs/Brand")
-
-    elif mode == "Diagnostic":
-        dtc, abs_c = st.text_input("DTC"), st.text_input("ABS Codes")
-        sec_mod = "BCM" if active_cat == "Motorcycle" else "SRS"
-        mod_val = st.text_input(f"{sec_mod} Codes")
-        entry["Notes"] = st.text_area(f"DTC:{dtc} | {sec_mod}:{mod_val} | ABS:{abs_c}")
-
-    elif mode == "Bulbs":
-        entry["Bulbs"] = st.text_input("Bulb Specification")
-        entry["Notes"] = st.text_area("Location/Notes")
-
-    elif mode == "Legal File":
-        entry["Notes"] = st.text_area("Insurance/Registration Details")
-
-    if st.button("💾 SAVE RECORD"):
-        pd.concat([pd.read_csv(LOG), pd.DataFrame([entry])], ignore_index=True).to_csv(LOG, index=False)
-        st.success("Saved!")
-        st.rerun()
-
-with col2:
-    st.subheader("📋 YOUR HISTORY")
-    u_log = full_log[(full_log["User"] == st.session_state.user) & (full_log["Vehicle"] == active_v)]
-    st.dataframe(u_log.sort_values(by="Date", ascending=False), use_container_width=True, hide_index=True)
