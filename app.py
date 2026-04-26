@@ -39,35 +39,3 @@ def hash_pass(password):
     return hashlib.sha256(str.encode(password)).hexdigest()
 
 def load_and_fix(file_path, default_cols):
-    if not os.path.exists(file_path):
-        pd.DataFrame(columns=default_cols).to_csv(file_path, index=False)
-    df = pd.read_csv(file_path)
-    if 'User' not in df.columns:
-        df.insert(0, 'User', st.session_state.user)
-        df.to_csv(file_path, index=False)
-    return df
-
-# --- 3. LOGIN SYSTEM ---
-if 'auth' not in st.session_state:
-    st.session_state.auth = False
-    st.session_state.user = None
-
-if not st.session_state.auth:
-    _, center, _ = st.columns([1, 1.5, 1])
-    with center:
-        st.markdown('<div class="login-card"><div class="shop-title">Garage Hub</div>', unsafe_allow_html=True)
-        tab1, tab2 = st.tabs(["Login", "Register"])
-        with tab1:
-            u = st.text_input("Username")
-            p = st.text_input("Password", type="password")
-            if st.button("Access Garage"):
-                user_df = pd.read_csv(USERS)
-                if not user_df[(user_df['username'] == u) & (user_df['password'] == hash_pass(p))].empty:
-                    st.session_state.auth, st.session_state.user = True, u
-                    st.rerun()
-                else: st.error("Invalid Login")
-        with tab2:
-            nu, np = st.text_input("New User"), st.text_input("New Pass", type="password")
-            if st.button("Create Account"):
-                ud = pd.read_csv(USERS)
-                if nu not in ud['username'].values:
