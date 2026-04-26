@@ -96,6 +96,7 @@ col1, col2 = st.columns([1.3, 2], gap="large")
 with col1:
     mode = st.selectbox("CATEGORY", ["Oil Change", "Tires", "Repair", "Diagnostic", "Bulbs", "Legal File"])
     
+    # KM Odometer logic
     km = ""
     if mode not in ["Bulbs", "Legal File"]:
         km = st.text_input("ODOMETER (KM)")
@@ -125,6 +126,7 @@ with col1:
             o_liters = st.text_input("Liters")
             o_filter = st.text_input("Filter #")
             entry["Oil_M"] = f"{o_grade} ({o_type})"
+            # Fixed the string literal error from the photo here:
             note_content = st.text_area("Notes")
             entry["Notes"] = f"{o_liters}L | Filter: {o_filter} | {note_content}"
 
@@ -152,6 +154,7 @@ with col1:
         abs_c = d1.text_input("ABS")
         srs = d2.text_input("SRS")
         oth = d2.text_input("Body")
+        # Changed 'Live Data' to 'Notes' per request
         diag_notes = st.text_area("Notes")
         entry["Notes"] = f"DTC:{dtc} | SRS:{srs} | ABS:{abs_c} | Body:{oth} | {diag_notes}"
 
@@ -195,4 +198,3 @@ with col2:
                 sel = st.selectbox("Select record", v_h.index, format_func=lambda x: v_h.loc[x, 'Display'])
                 if st.button("PURGE RECORD"):
                     h_df.drop(sel).to_csv(LOG, index=False)
-                    st.rerun()
